@@ -7,14 +7,20 @@ import { Search } from "lucide-react";
 
 const NavBar = () => {
   const [search, setSearch] = useState("");
+  const [activeColor, setActiveColor] = useState("text-black");
   const router = useRouter();
-  const pathname = usePathname(); // ✅ Get current route from Next.js
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setActiveColor("text-green-700 font-semibold");
+  }, [pathname]);
 
   const menuItems = [
-    { name: "Home", path: "/home" }, // ✅ Corrected home path
-    { name: "Products", path: "/products" },
+    { name: "Home", path: "/" },
+    { name: "Products", path: "/product" },
     { name: "Services", path: "/services" },
-    { name: "About", path: "/aboutus" },
+    { name: "Buy & Sell", path: "/buy" },
+    { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
   ];
 
@@ -25,19 +31,19 @@ const NavBar = () => {
   return (
     <nav className="bg-white shadow-md py-4 px-8 flex items-center justify-between sticky top-0 z-50">
       {/* Logo */}
-      <div className="text-xl font-bold text-black">GREEN HAVEN NURSERY</div>
+      <div className="text-xl font-bold text-black">Vel's Nursery Garden</div>
 
       {/* Navigation Links */}
       <ul className="hidden md:flex space-x-8 text-gray-500">
         {menuItems.map((item) => (
           <li key={item.name} className="relative">
             <Link href={item.path} className="cursor-pointer">
-              <span className={`hover:text-black ${pathname === item.path ? "text-black font-semibold" : ""}`}>
+              <span className={`hover:text-black ${pathname === item.path ? activeColor : ""}`}>
                 {item.name}
               </span>
             </Link>
             {pathname === item.path && (
-              <div className="absolute left-0 w-full h-[2px] bg-black"></div>
+              <div className="absolute left-0 w-full h-[2px] bg-green-700"></div>
             )}
           </li>
         ))}
@@ -59,9 +65,7 @@ const NavBar = () => {
             {filteredItems.length > 0 ? (
               filteredItems.map((item) => (
                 <li key={item.name} className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                  <Link href={item.path} onClick={() => setSearch("")}>
-                    {item.name}
-                  </Link>
+                  <Link href={item.path} onClick={() => setSearch("")}> {item.name} </Link>
                 </li>
               ))
             ) : (

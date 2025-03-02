@@ -11,13 +11,14 @@ interface PlantCategory {
   name: string;
   image: string;
   description: string;
+  price: string;
 }
 
 interface SliderProps {
   items: PlantCategory[];
 }
 
-const CustomSlider: React.FC<SliderProps> = ({ items }) => {
+const BuyCardSlider: React.FC<SliderProps> = ({ items }) => {
   const settings = {
     dots: true,
     infinite: true,
@@ -44,7 +45,7 @@ const CustomSlider: React.FC<SliderProps> = ({ items }) => {
     <Slider {...settings} className="w-full">
       {items.map((item) => (
         <div key={item.id} className="p-4">
-          <div className="bg-white shadow-md rounded-lg overflow-hidden p-6 text-center transition-transform transform hover:scale-105 hover:shadow-lg">
+          <div className="bg-white shadow-md rounded-lg overflow-hidden p-6 text-left transition-transform transform hover:scale-105 hover:shadow-lg">
             <Image
               src={item.image}
               alt={item.name}
@@ -54,8 +55,9 @@ const CustomSlider: React.FC<SliderProps> = ({ items }) => {
             />
             <h4 className="text-lg font-semibold">{item.name}</h4>
             <p className="text-gray-600 text-sm mt-2">{item.description}</p>
-            <button className="mt-4 px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition">
-              Explore More
+            <p className="text-green-600 font-bold mt-2">{item.price}</p>
+            <button className="mt-4 px-4 py-2 text-white bg-yellow-500 rounded-md  hover:bg-green-700 transition">
+                Buy Now
             </button>
           </div>
         </div>
@@ -64,4 +66,4 @@ const CustomSlider: React.FC<SliderProps> = ({ items }) => {
   );
 };
 
-export default CustomSlider;
+export default BuyCardSlider;

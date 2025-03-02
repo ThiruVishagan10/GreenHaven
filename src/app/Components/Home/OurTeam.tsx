@@ -41,7 +41,10 @@ const OurTeam: React.FC = () => {
       <h3 className="text-3xl font-bold mb-8">Meet Our Team</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {teamMembers.map((member) => (
-          <div key={member.id} className="bg-white p-6 rounded-lg shadow-lg">
+          <div
+            key={member.id}
+            className="bg-white p-6 rounded-lg shadow-lg transition-transform duration-300 hover:scale-105 hover:shadow-2xl"
+          >
             <div className="flex flex-col items-center">
               <Image
                 src={member.image}

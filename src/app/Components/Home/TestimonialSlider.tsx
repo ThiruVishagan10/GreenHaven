@@ -48,7 +48,7 @@ const TestimonialSlider: React.FC = () => {
       <Slider {...settings}>
         {testimonials.map((testimonial) => (
           <div key={testimonial.id} className="p-4 text-center">
-            <div className="flex flex-col items-center bg-gray-50 p-6 rounded shadow-lg">
+            <div className="flex flex-col items-center bg-gray-50 p-6 rounded shadow-lg transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
               <Image
                 src={testimonial.image}
                 alt={testimonial.name}
