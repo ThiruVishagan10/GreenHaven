@@ -1,10 +1,10 @@
-import Leading from "../Components/aboutus/Leading";
-import Story from "../Components/aboutus/Story";
-import Product from "../Components/aboutus/Product";
-import OurTeam from "../Components/aboutus/OurTeam";
-import CustomerReviews from "../Components/aboutus/CustomerReview";
-import Journey from "../Components/aboutus/Journey";
-import Location from "../Components/aboutus/Location";
+import Leading from "../ui/Components/aboutus/Leading";
+import Story from "../ui/Components/aboutus/Story";
+import Product from "../ui/Components/aboutus/Product";
+import OurTeam from "../ui/Components/Home/OurTeam";
+import CustomerReviews from "../ui/Components/aboutus/CustomerReview";
+import Journey from "../ui/Components/aboutus/Journey";
+import Location from "../ui/Components/aboutus/Location";
 
 export default function page() {
   return (

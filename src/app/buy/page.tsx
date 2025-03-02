@@ -1,6 +1,6 @@
-import BuyHero from "../Components/Buy/Buy-Hero";
-import RecommendedPlants from "../Components/Buy/RecommendedPlants";
-import SellingPlants from "../Components/Buy/SellingPlants";
+import BuyHero from "../ui/Components/Buy/Buy-Hero";
+import RecommendedPlants from "../ui/Components/Buy/RecommendedPlants";
+import SellingPlants from "../ui/Components/Buy/SellingPlants";
 
 export default function Buy() {
   return (

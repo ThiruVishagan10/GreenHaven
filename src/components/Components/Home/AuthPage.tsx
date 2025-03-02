@@ -1,13 +1,15 @@
-"use client";
-
-import { useState } from "react";
-import { FcGoogle } from "react-icons/fc";
-import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FcGoogle } from "react-icons/fc";
+import { useRouter } from "next/navigation";
 
-export default function AuthPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
+interface AuthFormProps {
+  isSignUp: boolean;
+}
+
+const AuthForm: React.FC<AuthFormProps> = ({ isSignUp }) => {
+  const router = useRouter();
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -31,18 +33,21 @@ export default function AuthPage() {
               {isSignUp ? "Sign Up" : "Sign In"}
             </Button>
           </form>
+
           <div className="flex items-center justify-center my-4">
             <div className="w-1/3 border-t border-gray-300"></div>
             <p className="px-2 text-gray-500 text-sm">OR</p>
             <div className="w-1/3 border-t border-gray-300"></div>
           </div>
+
           <Button variant="outline" className="w-full flex items-center justify-center py-3 border-gray-300 rounded-lg">
             <FcGoogle className="mr-2 text-xl" /> Continue with Google
           </Button>
+
           <p className="text-center text-gray-600 mt-4">
             {isSignUp ? "Already have an account?" : "Don't have an account?"}
             <span
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => router.push(isSignUp ? "/auth/signin" : "/auth/signup")}
               className="text-green-600 cursor-pointer font-medium ml-1 hover:underline"
             >
               {isSignUp ? "Sign In" : "Sign Up"}
@@ -52,4 +57,6 @@ export default function AuthPage() {
       </Card>
     </div>
   );
-}
+};
+
+export default AuthForm;

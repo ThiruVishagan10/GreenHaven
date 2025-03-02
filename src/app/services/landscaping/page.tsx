@@ -1,4 +1,4 @@
-import Landscaping from "../../Components/Services/Landscaping";
+import Landscaping from "../../ui/Components/Services/Landscaping";
 
 export default function page() {
   return (

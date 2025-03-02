@@ -1,9 +1,9 @@
-import Expert from "../Components/Services/Expert";
-import Garden from "../Components/Services/Garden";
-import Landscaping from "../Components/Services/Landscaping";
-import ProfessionalServices from "../Components/Services/ProfessionalService";
-import ServiceContact from "../Components/Services/ServiceContact";
-import Terrace from "../Components/Services/Terrace";
+import Expert from "../ui/Components/Services/Expert";
+import Garden from "../ui/Components/Services/Garden";
+import Landscaping from "../ui/Components/Services/Landscaping";
+import ProfessionalServices from "../ui/Components/Services/ProfessionalService";
+import ServiceContact from "../ui/Components/Services/ServiceContact";
+import Terrace from "../ui/Components/Services/Terrace";
 
 export default function ProfessionalServicePage() {
   return (

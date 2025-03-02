@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Footer from "./Components/Footer";
-import NavBar from "./Components/Navbar";
+import Footer from "@/app/ui/Components/Footer";
+import NavBar from "@/app/ui/Components/Navbar";
 
 export const metadata: Metadata = {
   title: "Green Haven",

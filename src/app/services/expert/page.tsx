@@ -1,4 +1,4 @@
-import Expert from "../../Components/Services/Expert";
+import Expert from "../../ui/Components/Services/Expert";
 
 export default function page(){
     return(
