@@ -8,29 +8,33 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserAuth } from "@/lib/context/AuthContent";
 import { handleSignIn } from "../api/signin";
-
-
+import { Alert, AlertDescription } from "@/app/ui/alert";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Fix: Properly destructure the object returned by UserAuth
   const { user, googleSignIn } = UserAuth();
 
   const handleGoogleSignIn = async () => {
     try {
+      setError(null);
       await googleSignIn();
       router.push("/");
     } catch (error) {
-      console.log(error);
+      setError("Unable to sign in with Google. Please try again.");
     }
   };
 
+  const getErrorMessage = () => {
+    return 'An error occurred during sign in. Please try again.';
+  };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     try {
       const response = await handleSignIn({
@@ -39,16 +43,14 @@ export default function Login() {
       });
       
       if (response.success) {
-        // Redirect to dashboard or home page
         router.push("/");
       }
-    } catch (error) {
-      console.error("Sign In Error:", error);
-      // Handle error (show error message to user)
+    } catch (error: any) {
+      // Convert Firebase error codes to user-friendly messages
+      const errorMessage = getErrorMessage();
+      setError(errorMessage);
     }
   };
-  
-
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
@@ -59,6 +61,14 @@ export default function Login() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription className="text-sm font-medium">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleEmailSignIn} className="space-y-4">
             <Input 
               placeholder="Email Address" 
