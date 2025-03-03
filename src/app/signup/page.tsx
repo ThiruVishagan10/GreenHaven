@@ -7,6 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserAuth } from "@/lib/context/AuthContent";
+import { handleSignUp } from "../api/signup";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -15,15 +16,32 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const router = useRouter();
 
-  // Fix: Properly destructure the object returned by UserAuth
   const { user, googleSignIn } = UserAuth();
+
+  
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevent form submission default behavior
+    
+    try {
+      await handleSignUp({
+        email,
+        password,
+        fullName
+      });
+      router.push("/");
+    } catch (error) {
+      console.error("Sign Up Error:", error);
+      // You might want to show this error to the user through a toast or alert
+    }
+  };
+  
 
   const handleGoogleSignIn = async () => {
     try {
       await googleSignIn();
       router.push("/");
     } catch (error) {
-      console.log(error);
+      console.error("Google Sign In Error:", error);
     }
   };
 
@@ -36,7 +54,7 @@ export default function Signup() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
+          <form onSubmit={handleEmailSignUp} className="space-y-4">
             <Input 
               placeholder="Full Name" 
               type="text" 

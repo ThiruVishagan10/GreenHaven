@@ -7,6 +7,9 @@ import { FcGoogle } from "react-icons/fc";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserAuth } from "@/lib/context/AuthContent";
+import { handleSignIn } from "../api/signin";
+
+
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -25,6 +28,28 @@ export default function Login() {
     }
   };
 
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await handleSignIn({
+        email,
+        password
+      });
+      
+      if (response.success) {
+        // Redirect to dashboard or home page
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Sign In Error:", error);
+      // Handle error (show error message to user)
+    }
+  };
+  
+
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-md p-6 shadow-xl rounded-2xl bg-white">
@@ -34,7 +59,7 @@ export default function Login() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
             <Input 
               placeholder="Email Address" 
               type="email" 

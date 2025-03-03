@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Footer from "@/app/ui/Components/Footer";
 import NavBar from "@/app/ui/Components/Navbar";
-import {AuthProvider} from "../lib/context/AuthContent";
+import {AuthContextProvider} from "../lib/context/AuthContent";
 
 // export const metadata: Metadata = {
 //   title: "Green Haven",
@@ -18,11 +18,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>
+        <AuthContextProvider>
         <NavBar /> 
         {children}
         <Footer />
-        </AuthProvider>
+        </AuthContextProvider>
       </body>
     </html>
   );
