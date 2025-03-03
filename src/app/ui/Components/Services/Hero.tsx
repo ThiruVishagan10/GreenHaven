@@ -14,7 +14,7 @@ const Hero = () => {
       {/* Background Image with Dark Overlay */}
       <div className="absolute inset-0">
         <Image
-          src="/Product-Hero.svg"
+          src="/New-Home.svg"
           alt="Nursery Background"
           layout="fill"
           objectFit="cover"
@@ -31,7 +31,7 @@ const Hero = () => {
           viewport={{ once: true }}
           className="text-4xl md:text-5xl font-bold"
         >
-          Let's Dive Into The Inventory
+            Transform Your Space with Nature
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -40,8 +40,8 @@ const Hero = () => {
           viewport={{ once: true }}
           className="mt-4 text-lg"
         >
-          Discover our extensive collection of plants and 
-          gardening materials
+          Discover our curated collection of premium indoor plants, perfect for
+          creating your own urban jungle
         </motion.p>
       </div>
     </motion.section>

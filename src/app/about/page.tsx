@@ -11,7 +11,7 @@ export default function page() {
     <div>
       <Leading />
       <Story />
-      <Product />
+      {/* <Product /> */}
       <OurTeam />
       <Location />
       <CustomerReviews />

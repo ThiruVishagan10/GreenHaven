@@ -1,5 +1,5 @@
 
-import Hero from "@/app/ui/Components/Product/Hero";
+import Hero from "@/app/ui/Components/Home/Hero";
 import Plants from "@/app/ui/Components/Home/PlantCategories";
 import ProfessionalGardenServices from "@/app/ui/Components/Home/ProfessionalGardenServices";
 import ContactSection from "@/app/ui/Components/Home/ContactSection";

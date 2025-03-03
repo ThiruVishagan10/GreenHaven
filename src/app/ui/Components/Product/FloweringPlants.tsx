@@ -2,6 +2,7 @@
 
 import React from "react";
 import CustomSlider from "../CustomSlider";
+import { useRouter } from "next/navigation"; 
 
 const plants = [
   {
@@ -35,6 +36,8 @@ const plants = [
 ];
 
 const FloweringPlants = () => {
+  const router = useRouter(); 
+
   return (
     <section className="py-12 bg-pink-50">
       <div className="container mx-auto px-4 text-center">
@@ -50,6 +53,12 @@ const FloweringPlants = () => {
             hoverEffect: "hover:shadow-lg hover:scale-105 transition-transform",
           }))}
         />
+        <button
+          className="mt-16 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+          onClick={() => router.push('/product/floweringplants')} // ✅ Use router.push
+        >
+          Explore More
+        </button>
       </div>
     </section>
   );

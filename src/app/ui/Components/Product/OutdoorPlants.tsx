@@ -2,6 +2,7 @@
 
 import React from "react";
 import CustomSlider from "../CustomSlider";
+import { useRouter } from "next/navigation";
 
 const plants = [
   {
@@ -35,6 +36,8 @@ const plants = [
 ];
 
 const OutdoorPlants = () => {
+  const router = useRouter(); // ✅ Declare router
+
   return (
     <section className="py-12 bg-pink-50">
       <div className="container mx-auto px-4 text-center">
@@ -43,13 +46,22 @@ const OutdoorPlants = () => {
           items={plants.map((plant) => ({
             ...plant,
             action: (
-              <button className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition">
+              <button
+                className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+                onClick={() => router.push("/product/outdoorplants")} // ✅ Use router.push
+              >
                 Explore More
               </button>
             ),
             hoverEffect: "hover:shadow-lg hover:scale-105 transition-transform",
           }))}
         />
+        <button
+          className="mt-16 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
+          onClick={() => router.push("/product/outdoorplants")} // ✅ Use router.push
+        >
+          Explore More
+        </button>
       </div>
     </section>
   );
