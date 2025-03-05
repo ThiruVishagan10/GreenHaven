@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useState } from "react";
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../../../firebase';
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: string;
@@ -27,6 +28,9 @@ interface ListViewProps {
 function ListView({ products, onDelete }: ListViewProps) {
     const [imageError, setImageError] = useState<{[key: string]: boolean}>({});
     const [isDeleting, setIsDeleting] = useState<{[key: string]: boolean}>({});
+
+    const router = useRouter();
+
 
     const handleImageError = (productId: string) => {
         setImageError(prev => ({
@@ -64,6 +68,8 @@ function ListView({ products, onDelete }: ListViewProps) {
         }
     };
 
+
+
     const ImageComponent = ({ src, alt, productId }: { src: string, alt: string, productId: string }) => {
         if (imageError[productId]) {
             return (
@@ -94,6 +100,11 @@ function ListView({ products, onDelete }: ListViewProps) {
                 <p className="text-gray-500">No products found</p>
             </div>
         );
+    }
+
+    const handleUpdate = async(id: string) => {
+        router.push(`/admin/CreateProduct?id=${id}`);
+        
     }
 
     return (
@@ -171,6 +182,12 @@ function ListView({ products, onDelete }: ListViewProps) {
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex space-x-2">
+                                <button
+                                        onClick={() => handleUpdate(product.id)}
+                                        className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                                    >
+                                        Edit
+                                    </button>
                                    
                                     <button
                                         onClick={() => handleDelete(product.id, product.name)}

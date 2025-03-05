@@ -8,8 +8,7 @@ import {
   Package, 
   ListTree, 
   ShoppingCart, 
-  Library,
-  LogOut
+  ShieldCheck 
 } from 'lucide-react'
 
 export default function Sidebar() {
@@ -37,9 +36,9 @@ export default function Sidebar() {
       icon: ShoppingCart,
     },
     {
-      name: 'Collections',
-      href: '/admin/collections',
-      icon: Library,
+      name: 'Admins',
+      href: '/admin/admins',
+      icon: ShieldCheck ,
     },
   ]
 

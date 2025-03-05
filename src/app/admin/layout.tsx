@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth } from '../../../firebase'
 import Sidebar from './components/Sidebar'
+import AdminProtectedRoute from '@/components/AdminProtectedRoute'
  // You'll need to create this
 
 function LoadingSpinner() {
@@ -55,10 +56,12 @@ export default function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-gray-100">
+        <AdminProtectedRoute>
       <Sidebar />
       <main className="ml-[20%] w-[80%] p-8">
         {children}
       </main>
+      </AdminProtectedRoute>
     </div>
   )
 }
