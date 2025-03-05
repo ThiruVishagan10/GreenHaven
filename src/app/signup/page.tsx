@@ -14,6 +14,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const { user, googleSignIn } = UserAuth();
@@ -21,7 +22,7 @@ export default function Signup() {
   
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault(); // Prevent form submission default behavior
-    
+    setLoading(true);
     try {
       await handleSignUp({
         email,
@@ -33,6 +34,7 @@ export default function Signup() {
       console.error("Sign Up Error:", error);
       // You might want to show this error to the user through a toast or alert
     }
+    setLoading(false);
   };
   
 
