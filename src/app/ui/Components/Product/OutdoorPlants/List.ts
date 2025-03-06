@@ -4,7 +4,7 @@ const OutdoorPlants = [
     name: "Bougainvillea",
     price: 300,
     category: "High Maintenance",
-    image: "OutdoorPlants/Bougainvillea.jpg",
+    image: "/Buy-Hero.svg",
     route: "/",
   },
   {

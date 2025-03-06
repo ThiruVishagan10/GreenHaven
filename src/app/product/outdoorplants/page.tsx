@@ -1,11 +1,14 @@
-import ProductList from "@/app/ui/Components/Product/OutdoorPlants/ProductList";
+"use client";
 
-const page = () => {
-    return (
-        <div>
-            <ProductList />
-        </div>
-    );
+import ProductList from "@/app/ui/Components/Product/OutdoorPlants/ProductList";
+import React from 'react'
+
+const OutdoorPlants = () => {
+  return (
+    <div>
+      <ProductList />
+    </div>
+  )
 }
 
-export default page;
+export default OutdoorPlants;

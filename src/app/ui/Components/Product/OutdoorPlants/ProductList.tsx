@@ -4,11 +4,13 @@ import React, { useState, useEffect } from "react";
 import BuyCard from "../../BuyCard"; // ✅ Corrected import path
 import { motion, AnimatePresence } from "framer-motion";
 import { Search } from "lucide-react";
+import { useRouter } from "next/navigation"; // ✅ Import useRouter
 import products from "../OutdoorPlants/List"; // ✅ Updated import path
 
 const categories = ["Low Maintenance", "Medium Maintenance", "High Maintenance"];
 
 const ProductList = () => {
+  const router = useRouter(); // ✅ Initialize router
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -33,6 +35,11 @@ const ProductList = () => {
     setSelectedCategories((prev) =>
       prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]
     );
+  };
+
+  // ✅ Function to navigate to the product detail page
+  const handleProductClick = (id: number) => {
+    router.push(`/product/${id}`); // ✅ Navigate to dynamic product page
   };
 
   return (
@@ -69,7 +76,11 @@ const ProductList = () => {
         <AnimatePresence mode="wait">
           <motion.div key={currentPage} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentProducts.length > 0 ? (
-              currentProducts.map((product) => <BuyCard key={product.id} {...product} />)
+              currentProducts.map((product) => (
+                <div key={product.id} onClick={() => handleProductClick(product.id)} className="cursor-pointer">
+                  <BuyCard {...product} />
+                </div>
+              ))
             ) : (
               <p className="text-center col-span-3">No products match your filter.</p>
             )}

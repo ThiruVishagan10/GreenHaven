@@ -14,6 +14,9 @@ const categories: PlantCategory[] = [
   { id: 2, name: "Outdoor Plants", image: "/hero.svg", description: "Ideal for gardens, patios, and outdoor landscapes." },
   { id: 3, name: "Flowering Plants", image: "/hero.svg", description: "Add color to your garden with our flowering plants." },
   { id: 4, name: "Fruit Trees", image: "/hero.svg", description: "Grow fresh fruits with our fruit trees." },
+  { id: 5, name: "Avenue Trees ", image: "/1.jpg", description: "Grow fresh fruits with our fruit trees." },
+  { id: 6, name: "Bonsai ", image: "/hero.svg", description: "Grow fresh fruits with our fruit trees." },
+  { id: 7, name: "Medicinal Plants", image: "/hero.svg", description: "Grow fresh fruits with our fruit trees." },
 ];
 
 const PlantCategoriesComponent: React.FC = () => {

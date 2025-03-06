@@ -12,7 +12,7 @@ const Hero = () => {
       className="relative w-full h-screen flex items-center justify-center text-center text-white bg-black"
     >
       {/* Background Image with Dark Overlay */}
-      <div className="absolute inset-0">
+      <div className="absolute opacity-60 inset-0">
         <Image
           src="/Product-Hero.svg"
           alt="Nursery Background"
