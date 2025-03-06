@@ -1,3 +1,5 @@
+"use client";
+
 import Delivery from "@/app/ui/Components/Product/template/Delivery";
 import Feature from "@/app/ui/Components/Product/template/Feature";
 import Hero from "@/app/ui/Components/Product/template/Hero";
