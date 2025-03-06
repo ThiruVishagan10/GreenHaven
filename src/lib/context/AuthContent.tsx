@@ -29,12 +29,14 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 
   // Google SignIn
   const googleSignIn = async () => {
+    setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Google Sign In Error:", error);
     }
+    
   };
 
   // Logout
@@ -66,3 +68,5 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
 export const UserAuth = () => {
   return useContext(AuthContext);
 };
+
+

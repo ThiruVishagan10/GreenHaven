@@ -6,12 +6,15 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { User, LogOut, ShoppingBag, UserCircle } from "lucide-react";
 import { UserAuth } from "@/lib/context/AuthContent";
+import { useAdminAuth } from "@/lib/context/AdminAuth";
 
 const NavBar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
   const { user, logOut } = UserAuth();
+  const { isAdmin } = useAdminAuth(); // Add this line to check admin status
 
   const menuItems = [
     { name: "Home", path: "/" },
@@ -23,6 +26,7 @@ const NavBar = () => {
   ];
 
   const handleLogout = async () => {
+    setLoading(true);
     try {
       await logOut();
       setDropdownOpen(false);
@@ -30,6 +34,12 @@ const NavBar = () => {
     } catch (error) {
       console.error("Logout error:", error);
     }
+    setLoading(false);
+  };
+
+  const handleAdminNavigation = () => {
+    setDropdownOpen(false);
+    router.push('/admin');
   };
 
   // Function to get user display image
@@ -96,6 +106,13 @@ const NavBar = () => {
                     <ShoppingBag size={18} />
                     <Link href="/orders">Orders</Link>
                   </li>
+                  {/* Only show Admin Page option if user is admin */}
+                  {isAdmin && (
+                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
+                      <User size={18} />
+                      <button onClick={handleAdminNavigation}>Admin Page</button>
+                    </li>
+                  )}
                   <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2 text-red-500">
                     <LogOut size={18} />
                     <button onClick={handleLogout}>Logout</button>
