@@ -4,35 +4,11 @@ import React, { useState, useEffect } from "react";
 import { CircularProgress } from "@nextui-org/react";
 import BuyCard from "../BuyCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, X } from "lucide-react";
+import { Search, Filter, X, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../../../firebase";
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: string;
-  offeredPrice: string;
-  description: string;
-  mainImage: string;
-  maintenance?: string;
-}
-
-interface ProductListProps {
-  category: string;
-  itemsPerPage?: number;
-  initialPriceRange?: number;
-  className?: string;
-}
-
-const maintenanceCategories = [
-  { value: "all", label: "All Maintenance" },
-  { value: "Low Maintenance", label: "Low Maintenance" },
-  { value: "Medium Maintenance", label: "Medium Maintenance" },
-  { value: "High Maintenance", label: "High Maintenance" },
-];
+import { Product, ProductListProps, SORT_OPTIONS } from "../../../../types/product";
 
 export default function ProductListComponent({ 
   category,
@@ -41,16 +17,41 @@ export default function ProductListComponent({
   className = ""
 }: ProductListProps) {
   const router = useRouter();
+  
+  // State management
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMaintenance, setSelectedMaintenance] = useState("all");
   const [priceRange, setPriceRange] = useState(initialPriceRange);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [sortOption, setSortOption] = useState("featured");
 
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(new Set(JSON.parse(savedFavorites)));
+    }
+  }, []);
+
+  // Sync favorites across tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'favorites') {
+        const newFavorites = e.newValue ? JSON.parse(e.newValue) : [];
+        setFavorites(new Set(newFavorites));
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Fetch products
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -79,16 +80,28 @@ export default function ProductListComponent({
     fetchProducts();
   }, [category]);
 
+  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedMaintenance, priceRange]);
+  }, [searchQuery, priceRange, sortOption]);
 
+  // Event handlers
   const handleProductClick = (productId: string) => {
     router.push(`/product/${productId}`);
   };
 
-  const handleMaintenanceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedMaintenance(e.target.value);
+  const toggleFavorite = (e: React.MouseEvent, productId: string) => {
+    e.stopPropagation();
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(productId)) {
+        newFavorites.delete(productId);
+      } else {
+        newFavorites.add(productId);
+      }
+      localStorage.setItem('favorites', JSON.stringify([...newFavorites]));
+      return newFavorites;
+    });
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,14 +118,19 @@ export default function ProductListComponent({
     setSearchQuery(inputValue);
   };
 
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortOption(e.target.value);
+  };
+
   const resetFilters = () => {
     setInputValue("");
     setSearchQuery("");
-    setSelectedMaintenance("all");
     setPriceRange(initialPriceRange);
+    setSortOption("featured");
     setIsMobileFiltersOpen(false);
   };
 
+  // Product filtering and sorting
   const filteredProducts = products.filter((product) => {
     const searchTerms = searchQuery.toLowerCase().split(' ');
     const productName = product.name.toLowerCase();
@@ -122,20 +140,40 @@ export default function ProductListComponent({
       productName.includes(term) || productDescription.includes(term)
     );
     
-    const matchesMaintenance = selectedMaintenance === "all" || 
-      product.maintenance?.toLowerCase() === selectedMaintenance.toLowerCase();
-    
     const matchesPrice = parseFloat(product.price) <= priceRange;
     
-    return matchesSearch && matchesMaintenance && matchesPrice;
+    return matchesSearch && matchesPrice;
   });
 
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const currentProducts = filteredProducts.slice(
+  const sortProducts = (productsToSort: Product[]) => {
+    const sorted = [...productsToSort];
+    
+    switch (sortOption) {
+      case "price-low-high":
+        return sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+      case "price-high-low":
+        return sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+      case "name-a-z":
+        return sorted.sort((a, b) => a.name.localeCompare(b.name));
+      case "name-z-a":
+        return sorted.sort((a, b) => b.name.localeCompare(a.name));
+      case "newest":
+        return sorted.sort((a, b) => 
+          new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+        );
+      default:
+        return sorted;
+    }
+  };
+
+  const sortedProducts = sortProducts(filteredProducts);
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+  const currentProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
+  // Search and Filters component
   const SearchAndFilters = () => (
     <div className="space-y-4">
       <div className="relative flex">
@@ -160,16 +198,16 @@ export default function ProductListComponent({
 
       <div>
         <label className="text-sm font-semibold block mb-2">
-          Maintenance Level
+          Sort By
         </label>
         <select
-          value={selectedMaintenance}
-          onChange={handleMaintenanceChange}
+          value={sortOption}
+          onChange={handleSortChange}
           className="w-full border border-gray-300 rounded-md px-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
         >
-          {maintenanceCategories.map((category) => (
-            <option key={category.value} value={category.value}>
-              {category.label}
+          {SORT_OPTIONS.map((option: { value: string; label: string }) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
@@ -189,7 +227,7 @@ export default function ProductListComponent({
         />
       </div>
 
-      {(searchQuery || selectedMaintenance !== "all" || priceRange < initialPriceRange) && (
+      {(searchQuery || priceRange < initialPriceRange) && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold">Active Filters</h4>
@@ -203,25 +241,14 @@ export default function ProductListComponent({
           <div className="space-y-2">
             {searchQuery && (
               <div className="flex items-center justify-between">
-                <span className="text-sm truncate flex-1 mr-2">Search: {searchQuery}</span>
+                <span className="text-sm truncate flex-1 mr-2">
+                  Search: {searchQuery}
+                </span>
                 <button
                   onClick={() => {
                     setSearchQuery("");
                     setInputValue("");
                   }}
-                  className="text-red-500 text-sm flex-shrink-0"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {selectedMaintenance !== "all" && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm truncate flex-1 mr-2">
-                  Maintenance: {selectedMaintenance}
-                </span>
-                <button
-                  onClick={() => setSelectedMaintenance("all")}
                   className="text-red-500 text-sm flex-shrink-0"
                 >
                   ×
@@ -252,6 +279,7 @@ export default function ProductListComponent({
 
   return (
     <div className={`min-h-screen bg-gray-50 ${className}`}>
+      {/* Mobile Filter Button */}
       <div className="lg:hidden fixed bottom-4 right-4 z-50">
         <button
           onClick={() => setIsMobileFiltersOpen(true)}
@@ -262,12 +290,16 @@ export default function ProductListComponent({
         </button>
       </div>
 
+      {/* Mobile Filters */}
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileFiltersOpen(false)} />
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50" 
+            onClick={() => setIsMobileFiltersOpen(false)} 
+          />
           <div className="fixed right-0 top-0 h-full w-[300px] bg-white p-6 overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold">Filters</h3>
+              <h3 className="text-lg font-bold">Filters & Sort</h3>
               <button
                 onClick={() => setIsMobileFiltersOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-full"
@@ -283,21 +315,24 @@ export default function ProductListComponent({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
+          {/* Desktop Sidebar */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-4">
-              <h3 className="text-lg font-bold mb-4">Filters</h3>
+              <h3 className="text-lg font-bold mb-4">Filters & Sort</h3>
               <SearchAndFilters />
             </div>
           </aside>
 
+          {/* Main Content */}
           <main className="flex-1">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-800">{category}</h1>
               <span className="text-sm text-gray-500">
-                {filteredProducts.length} products
+                {sortedProducts.length} products
               </span>
             </div>
 
+            {/* Mobile Search */}
             <div className="lg:hidden mb-6">
               <div className="relative flex">
                 <div className="relative flex-1">
@@ -319,10 +354,11 @@ export default function ProductListComponent({
                 </button>
               </div>
             </div>
-            
+
+            {/* Product Grid */}
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentPage}
+                key={currentPage + sortOption}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -333,9 +369,35 @@ export default function ProductListComponent({
                     <motion.div
                       key={product.id}
                       whileHover={{ scale: 1.02 }}
-                      className="cursor-pointer"
+                      className="cursor-pointer relative"
                       onClick={() => handleProductClick(product.id)}
                     >
+                      <div className="absolute top-2 right-2 z-10">
+                        <button
+                          onClick={(e) => toggleFavorite(e, product.id)}
+                          className="p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200 transform hover:scale-110"
+                          aria-label={favorites.has(product.id) ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <AnimatePresence mode="wait">
+                            <motion.div
+                              key={favorites.has(product.id) ? 'filled' : 'empty'}
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <Heart
+                                size={20}
+                                className={`transition-colors ${
+                                  favorites.has(product.id)
+                                    ? "fill-red-500 text-red-500"
+                                    : "fill-none text-gray-500"
+                                }`}
+                              />
+                            </motion.div>
+                          </AnimatePresence>
+                        </button>
+                      </div>
                       <BuyCard {...product} />
                     </motion.div>
                   ))
@@ -353,6 +415,7 @@ export default function ProductListComponent({
               </motion.div>
             </AnimatePresence>
 
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-4 mt-8">
                 <button
