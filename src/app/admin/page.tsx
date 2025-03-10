@@ -1,252 +1,168 @@
-// app/admin/page.tsx
 "use client"
 
-import { useProducts } from "@/lib/firestore/createProduct/read";
+import { getProducts } from "../../lib/firestore/createProduct/read";
 import { useEffect, useState } from "react";
 import { CircularProgress } from "@nextui-org/react";
-import { getAdmins } from "@/lib/firestore/admin/read";
-import { useAdminAuth } from "@/lib/context/AdminAuth";
-import AdminOnly from "@/components/AdminOnly";
-import { UserAuth } from "@/lib/context/AuthContent";
+import { Card, CardBody } from "@nextui-org/react";
+import { ShoppingBag } from 'lucide-react';
+import Link from "next/link";
 
-interface Admin {
+interface Product {
   id: string;
   name: string;
-  email: string;
+  category: string;
+  price: string;
+  offeredPrice: string;
+  specialOffers: string[];
+  description: string;
+  mainImage: string;
+  additionalImages: string[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
-export default function AdminPage() {
-  const { user } = UserAuth();
-  const { isAdmin } = useAdminAuth();
-  const { data: products, error: productError, isLoading: productsLoading } = useProducts();
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [adminError, setAdminError] = useState<string | null>(null);
-  const [isLoadingAdmins, setIsLoadingAdmins] = useState(true);
+export default function AdminDashboard() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAdmins = async () => {
+    const fetchData = async () => {
       try {
-        const adminData = await getAdmins();
-        setAdmins(adminData);
-      } catch (error) {
-        setAdminError('Failed to fetch admins');
-        console.error('Error fetching admins:', error);
+        // Fetch products
+        const productResponse = await getProducts();
+        if (productResponse.success) {
+          setProducts(productResponse.data);
+        } else {
+          setError(productResponse.error || 'Failed to fetch products');
+        }
+      } catch (err) {
+        setError('Failed to fetch data');
+        console.error('Error fetching data:', err);
       } finally {
-        setIsLoadingAdmins(false);
+        setIsLoading(false);
       }
     };
 
-    if (isAdmin) {
-      fetchAdmins();
-    }
-  }, [isAdmin]);
+    fetchData();
+  }, []);
 
-  if (!user) {
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Please log in to continue</h1>
+      <div className="flex justify-center items-center h-screen">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 text-center py-4">
+        {error}
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Dashboard Overview</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">Dashboard</h1>
       
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {/* Products Stats */}
-        <div className="rounded-lg bg-white p-6 shadow-md">
-          <h3 className="text-gray-500">Total Products</h3>
-          {productsLoading ? (
-            <div className="flex justify-center items-center h-12">
-              <CircularProgress size="sm" />
-            </div>
-          ) : productError ? (
-            <p className="text-red-500">Error loading products</p>
-          ) : (
-            <>
-              <p className="text-2xl font-bold">{products?.length || 0}</p>
-              <span className="text-sm text-blue-500">
-                Available Products
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Admin-only Stats */}
-        <AdminOnly>
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <h3 className="text-gray-500">Total Admins</h3>
-            {isLoadingAdmins ? (
-              <div className="flex justify-center items-center h-12">
-                <CircularProgress size="sm" />
+      <div className="grid grid-cols-1 gap-6">
+        {/* Products Card */}
+        <Card className="bg-white">
+          <CardBody>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">Products</h2>
+                <p className="text-gray-600">Total: {products.length}</p>
               </div>
-            ) : adminError ? (
-              <p className="text-red-500">Error loading admins</p>
-            ) : (
-              <>
-                <p className="text-2xl font-bold">{admins?.length || 0}</p>
-                <span className="text-sm text-blue-500">
-                  Registered Admins
-                </span>
-              </>
-            )}
-          </div>
-        </AdminOnly>
+              <ShoppingBag className="h-8 w-8 text-green-500" />
+            </div>
+            <Link 
+              href="/admin/product"
+              className="text-green-600 hover:text-green-800 text-sm font-medium"
+            >
+              View All Products →
+            </Link>
+          </CardBody>
+        </Card>
       </div>
 
-      {/* Admin-only Section */}
-      <AdminOnly>
-        <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 text-xl font-semibold">Admin List</h2>
-          {isLoadingAdmins ? (
-            <div className="flex justify-center items-center h-32">
-              <CircularProgress />
-            </div>
-          ) : adminError ? (
-            <div className="text-red-500 text-center py-4">
-              {adminError}
-            </div>
-          ) : !admins?.length ? (
-            <div className="text-center py-4 text-gray-500">
-              No admins available
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Added On
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {admins.map((admin) => (
-                    <tr key={admin.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {admin.name}
+      {/* Recent Activity Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Recent Products</h2>
+        <Card>
+          <CardBody>
+            <div className="space-y-4">
+              {/* Recent Products */}
+              <div>
+                <div className="space-y-2">
+                  {products.slice(0, 5).map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative w-12 h-12">
+                          {product.mainImage ? (
+                            <img 
+                              src={product.mainImage} 
+                              alt={product.name}
+                              className="w-12 h-12 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-lg bg-gray-200 flex items-center justify-center">
+                              <ShoppingBag className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {admin.email}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{product.name}</span>
+                          <span className="text-sm text-gray-500">{product.category}</span>
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-500">
-                          {admin.createdAt 
-                            ? new Date(admin.createdAt).toLocaleDateString()
-                            : 'N/A'
-                          }
-                        </div>
-                      </td>
-                    </tr>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-green-600 font-medium">₹{parseFloat(product.offeredPrice).toFixed(2)}</span>
+                        <span className="text-sm text-gray-500 line-through">₹{parseFloat(product.price).toFixed(2)}</span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      </AdminOnly>
+          </CardBody>
+        </Card>
+      </div>
 
-      {/* Products List - Visible to all users */}
-      <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
-        <h2 className="mb-4 text-xl font-semibold">Recent Products</h2>
-        {productsLoading ? (
-          <div className="flex justify-center items-center h-32">
-            <CircularProgress />
-          </div>
-        ) : productError ? (
-          <div className="text-red-500 text-center py-4">
-            Error loading products
-          </div>
-        ) : !products?.length ? (
-          <div className="text-center py-4 text-gray-500">
-            No products available
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Image
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  {/* Admin-only actions */}
-                  <AdminOnly>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </AdminOnly>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {product.mainImage ? (
-                        <img
-                          src={product.mainImage}
-                          alt={product.name}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-xs text-gray-500">No img</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {product.name}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">
-                        {product.category}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        ${parseFloat(product.price).toFixed(2)}
-                      </div>
-                    </td>
-                    {/* Admin-only actions */}
-                    <AdminOnly>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-4">
-                          Edit
-                        </button>
-                        <button className="text-red-600 hover:text-red-900">
-                          Delete
-                        </button>
-                      </td>
-                    </AdminOnly>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Quick Actions */}
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link href="/admin/CreateProduct">
+            <Card className="bg-white hover:bg-gray-50 cursor-pointer">
+              <CardBody>
+                <div className="flex items-center space-x-3">
+                  <ShoppingBag className="h-6 w-6 text-green-500" />
+                  <div>
+                    <h3 className="font-medium">Add New Product</h3>
+                    <p className="text-sm text-gray-500">Create a new product listing</p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/product">
+            <Card className="bg-white hover:bg-gray-50 cursor-pointer">
+              <CardBody>
+                <div className="flex items-center space-x-3">
+                  <ShoppingBag className="h-6 w-6 text-blue-500" />
+                  <div>
+                    <h3 className="font-medium">Manage Products</h3>
+                    <p className="text-sm text-gray-500">View and edit all products</p>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </Link>
+        </div>
       </div>
     </div>
   );

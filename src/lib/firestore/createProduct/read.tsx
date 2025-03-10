@@ -1,69 +1,69 @@
-// "use client";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { db } from "../../../../firebase";
 
-// import { collection, onSnapshot } from 'firebase/firestore'
-// import useSWRSubscription from 'swr/subscription'
-// import { db } from '../../../../firebase';
- 
-// export function useProducts() {
-//   const { data , error } = useSWRSubscription(["products"], ([path], { next }) => {
-//     const ref = collection(db, path);
-//     const unsub = onSnapshot(
-//         ref,
-//       (snapshot) => next(null, snapshot.docs.length ===0 ? null : snapshot.docs.map((snap)=> snap.data)),
-//       (err) => next(err)
-//     );
+interface ProductData {
+  id: string;
+  name: string;
+  category: string;
+  price: string;
+  offeredPrice: string;
+  specialOffers: string[];
+  description: string;
+  mainImage: string;
+  additionalImages: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
 
-//     return () => unsub();
-//   })
- 
-//   return {data,error:error?.message, isLoading: data === undefined };
-// }
-// lib/firestore/createProduct/read.ts
-import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '../../../../firebase';
+interface GetProductsResponse {
+  success: boolean;
+  data: ProductData[];
+  error?: string;
+}
 
-interface Product {
-    id: string;
-    name: string;
-    category: string;
-    price: string;
-    description: string;
-    mainImage?: string;
-    additionalImages?: string[];
-    createdAt?: string;
-    updatedAt?: string;
+interface GetProductProps {
+  id: string;
+}
+
+export const getProducts = async (): Promise<GetProductsResponse> => {
+  try {
+    const querySnapshot = await getDocs(collection(db, "products"));
+    const products: ProductData[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data() as ProductData;
+      products.push({
+        ...data,
+        id: doc.id,
+      });
+    });
+
+    return {
+      success: true,
+      data: products,
+    };
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return {
+      success: false,
+      data: [],
+      error: error instanceof Error ? error.message : "Failed to fetch products",
+    };
   }
+};
 
-interface UseProductsReturn {
-    data: Product[] | null;
-    error: Error | null;
-    isLoading: boolean;
-}
+export const getProduct = async ({ id }: GetProductProps): Promise<ProductData | null> => {
+  try {
+    const docRef = doc(db, "products", id);
+    const docSnap = await getDoc(docRef);
 
-export function useProducts(): UseProductsReturn {
-    const [data, setData] = useState<Product[] | null>(null);
-    const [error, setError] = useState<Error | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        async function fetchProducts() {
-            try {
-                const querySnapshot = await getDocs(collection(db, 'products'));
-                const products = querySnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })) as Product[];
-                setData(products);
-            } catch (err) {
-                setError(err instanceof Error ? err : new Error('Failed to fetch products'));
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        fetchProducts();
-    }, []);
-
-    return { data, error, isLoading };
-}
+    if (docSnap.exists()) {
+      return docSnap.data() as ProductData;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    throw error;
+  }
+};

@@ -1,27 +1,31 @@
-// app/admin/products/page.tsx
 "use client"
 
 import { Button } from "@nextui-org/react";
 import Link from "next/link";
 import ListView from "../components/ListView";
 import { useState, useEffect } from "react";
-import { useProducts } from "@/lib/firestore/createProduct/read";
+import { getProducts } from "@/lib/firestore/createProduct/read";
 import { CircularProgress } from "@nextui-org/react";
+import { allCategories } from "../../../lib/categories";
 
 interface Product {
   id: string;
   name: string;
   category: string;
   price: string;
+  offeredPrice: string;
+  specialOffers: string[];
   description: string;
-  mainImage?: string;
-  additionalImages?: string[];
+  mainImage: string;
+  additionalImages: string[];
   createdAt?: string;
   updatedAt?: string;
 }
 
 export default function ProductsPage() {
-  const { data: allProducts, error, isLoading } = useProducts();
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // State for filters and pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,17 +35,27 @@ export default function ProductsPage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [paginatedProducts, setPaginatedProducts] = useState<Product[]>([]);
   
-  // Changed to 10 items per page
   const itemsPerPage = 10;
 
-  // Categories data
-  const categories = [
-    { value: 'all', label: 'All Categories' },
-    { value: 'indoor', label: 'Indoor Plants' },
-    { value: 'outdoor', label: 'Outdoor Plants' },
-    { value: 'succulents', label: 'Succulents' },
-    { value: 'tools', label: 'Gardening Tools' }
-  ];
+  // Fetch products
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await getProducts();
+        if (response.success) {
+          setAllProducts(response.data);
+        } else {
+          setError(response.error || 'Failed to fetch products');
+        }
+      } catch (err) {
+        setError('An error occurred while fetching products');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Sort options
   const sortOptions = [
@@ -71,7 +85,7 @@ export default function ProductsPage() {
     // Apply category filter
     if (selectedCategory && selectedCategory !== 'all') {
       filtered = filtered.filter(product => 
-        product.category.toLowerCase() === selectedCategory.toLowerCase()
+        product.category === selectedCategory
       );
     }
 
@@ -94,7 +108,7 @@ export default function ProductsPage() {
     });
 
     setFilteredProducts(filtered);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, [allProducts, searchQuery, selectedCategory, sortBy]);
 
   // Handle pagination
@@ -106,33 +120,27 @@ export default function ProductsPage() {
     setPaginatedProducts(filteredProducts.slice(startIndex, endIndex));
   }, [filteredProducts, currentPage]);
 
-  // Calculate total pages
   const totalPages = Math.ceil((filteredProducts?.length || 0) / itemsPerPage);
 
-  // Handle search input change with debounce
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
   };
 
-  // Handle category change
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedCategory(e.target.value);
     setCurrentPage(1);
   };
 
-  // Handle sort change
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSortBy(e.target.value);
     setCurrentPage(1);
   };
 
-  // Handle product deletion
   const handleProductDelete = () => {
     window.location.reload();
   };
 
-  // Calculate the range of items being displayed
   const startItem = filteredProducts.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, filteredProducts.length);
 
@@ -172,7 +180,7 @@ export default function ProductsPage() {
               onChange={handleCategoryChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
             >
-              {categories.map((category) => (
+              {allCategories.map((category) => (
                 <option key={category.value} value={category.value}>
                   {category.label}
                 </option>
@@ -205,7 +213,7 @@ export default function ProductsPage() {
           </div>
         ) : error ? (
           <div className="text-red-500 text-center py-4">
-            Error loading products
+            {error}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-10">
@@ -282,7 +290,7 @@ export default function ProductsPage() {
           )}
           {selectedCategory !== 'all' && (
             <span className="bg-gray-100 px-2 py-1 rounded-md">
-              Category: {categories.find(c => c.value === selectedCategory)?.label}
+              Category: {allCategories.find(c => c.value === selectedCategory)?.label}
             </span>
           )}
           <button

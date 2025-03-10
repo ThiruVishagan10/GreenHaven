@@ -1,4 +1,3 @@
-// app/admin/components/ListView.tsx
 "use client"
 
 import Image from "next/image";
@@ -13,6 +12,8 @@ interface Product {
   name: string;
   category: string;
   price: string;
+  offeredPrice: string;
+  specialOffers: string[];
   description: string;
   mainImage?: string;
   additionalImages?: string[];
@@ -30,7 +31,6 @@ function ListView({ products, onDelete }: ListViewProps) {
     const [isDeleting, setIsDeleting] = useState<{[key: string]: boolean}>({});
 
     const router = useRouter();
-
 
     const handleImageError = (productId: string) => {
         setImageError(prev => ({
@@ -68,8 +68,6 @@ function ListView({ products, onDelete }: ListViewProps) {
         }
     };
 
-
-
     const ImageComponent = ({ src, alt, productId }: { src: string, alt: string, productId: string }) => {
         if (imageError[productId]) {
             return (
@@ -104,8 +102,18 @@ function ListView({ products, onDelete }: ListViewProps) {
 
     const handleUpdate = async(id: string) => {
         router.push(`/admin/CreateProduct?id=${id}`);
-        
     }
+
+    // Calculate discount percentage
+    const calculateDiscount = (price: string, offeredPrice: string) => {
+        const originalPrice = parseFloat(price);
+        const discountedPrice = parseFloat(offeredPrice);
+        if (originalPrice && discountedPrice) {
+            const discount = ((originalPrice - discountedPrice) / originalPrice) * 100;
+            return Math.round(discount);
+        }
+        return 0;
+    };
 
     return (
         <div className="overflow-x-auto">
@@ -122,7 +130,10 @@ function ListView({ products, onDelete }: ListViewProps) {
                             Category
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
+                            Price Details
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Special Offers
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Description
@@ -162,8 +173,29 @@ function ListView({ products, onDelete }: ListViewProps) {
                                 </div>
                             </td>
                             <td className="px-6 py-4">
-                                <div className="text-sm text-gray-900">
-                                    ${parseFloat(product.price).toFixed(2)}
+                                <div className="space-y-1">
+                                    <div className="text-sm text-gray-900 line-through">
+                                        ₹{parseFloat(product.price).toFixed(2)}
+                                    </div>
+                                    <div className="text-sm font-semibold text-green-600">
+                                        ₹{parseFloat(product.offeredPrice).toFixed(2)}
+                                    </div>
+                                    <div className="text-xs text-red-500">
+                                        {calculateDiscount(product.price, product.offeredPrice)}% OFF
+                                    </div>
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="text-sm text-gray-500">
+                                    {product.specialOffers && product.specialOffers.length > 0 ? (
+                                        <ul className="list-disc pl-4">
+                                            {product.specialOffers.map((offer, index) => (
+                                                <li key={index}>{offer}</li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <span className="text-gray-400">No special offers</span>
+                                    )}
                                 </div>
                             </td>
                             <td className="px-6 py-4">
@@ -182,7 +214,7 @@ function ListView({ products, onDelete }: ListViewProps) {
                             </td>
                             <td className="px-6 py-4">
                                 <div className="flex space-x-2">
-                                <button
+                                    <button
                                         onClick={() => handleUpdate(product.id)}
                                         className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
                                     >
@@ -197,7 +229,6 @@ function ListView({ products, onDelete }: ListViewProps) {
                                     >
                                         {isDeleting[product.id] ? 'Deleting...' : 'Delete'}
                                     </button>
-                                    
                                 </div>
                             </td>
                         </tr>
@@ -207,7 +238,5 @@ function ListView({ products, onDelete }: ListViewProps) {
         </div>
     );
 }
-
-
 
 export default ListView;

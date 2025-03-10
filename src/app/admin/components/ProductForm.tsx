@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useEffect, useState } from 'react'
@@ -7,12 +6,15 @@ import Image from 'next/image'
 import { createNewProduct, ProductData, UpdateProduct } from '@/lib/firestore/createProduct/write';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getProduct } from '@/lib/firestore/product/read_server';
+import { categoryOptions } from "../../../lib/categories";
 
 // Interfaces
 interface FormData {
   name?: string;
   category?: string;
   price?: string;
+  offeredPrice?: string;
+  specialOffers?: string[];
   description?: string;
   mainImage?: string;
   additionalImages?: string[];
@@ -62,6 +64,7 @@ export default function ProductForm() {
   const [data, setData] = useState<FormData | null>(null);
   const [mainImage, setMainImage] = useState<ImagePreview | null>(null);
   const [additionalImages, setAdditionalImages] = useState<ImagePreview[]>([]);
+  const [specialOffers, setSpecialOffers] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -91,6 +94,9 @@ export default function ProductForm() {
             file: new File([], '') // Empty file indicates existing image
           })));
         }
+        // if (res.specialOffers) {
+        //   setSpecialOffers(res.specialOffers);
+        // }
       }
     } catch (error) {
       alert(error);
@@ -110,10 +116,25 @@ export default function ProductForm() {
     }));
   };
 
+  const handleAddSpecialOffer = () => {
+    setSpecialOffers([...specialOffers, '']);
+  };
+
+  const handleSpecialOfferChange = (index: number, value: string) => {
+    const newOffers = [...specialOffers];
+    newOffers[index] = value;
+    setSpecialOffers(newOffers);
+  };
+
+  const removeSpecialOffer = (index: number) => {
+    setSpecialOffers(specialOffers.filter((_, i) => i !== index));
+  };
+
   const resetForm = () => {
     setData(null);
     setMainImage(null);
     setAdditionalImages([]);
+    setSpecialOffers([]);
     setSubmitError(null);
   };
 
@@ -165,7 +186,8 @@ export default function ProductForm() {
     e.preventDefault();
     setSubmitError(null);
     
-    if (!data?.name || !data?.category || !data?.price || !data?.description) {
+    if (!data?.name || !data?.category || !data?.price || !data?.description || 
+        !data?.offeredPrice) {
       setSubmitError('Please fill in all required fields');
       return;
     }
@@ -183,20 +205,18 @@ export default function ProductForm() {
     try {
       setIsSubmitting(true);
 
-      // Upload main image
       const mainImageUrl = await uploadImage(mainImage.file);
-
-      // Upload additional images
       const additionalImageUrls = await Promise.all(
         additionalImages.map(img => uploadImage(img.file))
       );
 
-      // Create product with uploaded image URLs
       const productData = {
         id: crypto.randomUUID(),
         name: data.name,
         category: data.category,
         price: data.price,
+        offeredPrice: data.offeredPrice,
+        specialOffers: specialOffers.filter(offer => offer.trim() !== ''),
         description: data.description,
         mainImage: mainImageUrl,
         additionalImages: additionalImageUrls
@@ -220,8 +240,8 @@ export default function ProductForm() {
     e.preventDefault();
     setSubmitError(null);
     
-    // Type guard to ensure all required fields are present
-    if (!id || !data?.name || !data?.category || !data?.price || !data?.description) {
+    if (!id || !data?.name || !data?.category || !data?.price || !data?.description ||
+        !data?.offeredPrice) {
       setSubmitError('All fields are required');
       return;
     }
@@ -234,13 +254,11 @@ export default function ProductForm() {
     try {
       setIsSubmitting(true);
   
-      // Handle main image
       let mainImageUrl = mainImage.url;
       if (mainImage.file.size > 0) {
         mainImageUrl = await uploadImage(mainImage.file);
       }
   
-      // Handle additional images
       const additionalImageUrls = await Promise.all(
         additionalImages.map(async (img) => {
           if (img.file.size > 0) {
@@ -250,13 +268,14 @@ export default function ProductForm() {
         })
       );
   
-      // Now we know all fields are defined
       const productData: ProductData = {
         id,
-        name: data.name,         // TypeScript now knows this is defined
-        category: data.category, // TypeScript now knows this is defined
-        price: data.price,      // TypeScript now knows this is defined
-        description: data.description, // TypeScript now knows this is defined
+        name: data.name,
+        category: data.category,
+        price: data.price,
+        offeredPrice: data.offeredPrice,
+        specialOffers: specialOffers.filter(offer => offer.trim() !== ''),
+        description: data.description,
         mainImage: mainImageUrl,
         additionalImages: additionalImageUrls
       };
@@ -287,7 +306,6 @@ export default function ProductForm() {
             </div>
           )}
 
-          {/* Form fields */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700">Name</label>
             <input
@@ -301,24 +319,70 @@ export default function ProductForm() {
 
           <div>
             <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
-            <input
-              type="text"
-              id="category"
-              value={data?.category || ''}
-              onChange={(e) => handleData('category', e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-            />
+            <select
+  value={data?.category || ''}
+  onChange={(e) => handleData('category', e.target.value)}
+  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+>
+  {categoryOptions.map((option) => (
+    <option key={option.value} value={option.value}>
+      {option.label}
+    </option>
+  ))}
+</select>
           </div>
 
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price</label>
             <input
-              type="text"
+              type="number"
               id="price"
               value={data?.price || ''}
               onChange={(e) => handleData('price', e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
             />
+          </div>
+
+          <div>
+            <label htmlFor="offeredPrice" className="block text-sm font-medium text-gray-700">Offered Price</label>
+            <input
+              type="number"
+              id="offeredPrice"
+              value={data?.offeredPrice || ''}
+              onChange={(e) => handleData('offeredPrice', e.target.value)}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Special Offers</label>
+            <div className="space-y-2">
+              {specialOffers.map((offer, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={offer}
+                    onChange={(e) => handleSpecialOfferChange(index, e.target.value)}
+                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    placeholder="Enter special offer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeSpecialOffer(index)}
+                    className="p-2 text-red-500 hover:text-red-700"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={handleAddSpecialOffer}
+                className="mt-2 inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                Add Special Offer
+              </button>
+            </div>
           </div>
 
           <div>

@@ -1,4 +1,3 @@
-
 import { collection, doc, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 
@@ -7,6 +6,8 @@ interface BaseProductData {
   name: string;
   category: string;
   price: string;
+  offeredPrice: string;
+  specialOffers: string[];
   description: string;
   mainImage: string;
   additionalImages: string[];
@@ -45,6 +46,10 @@ const validateProductData = (data: ProductData, isUpdate: boolean = false): void
   if (!data.price?.trim()) {
     throw new Error('Price is required');
   }
+
+  if (!data.offeredPrice?.trim()) {
+    throw new Error('Offered price is required');
+  }
   
   if (!data.description?.trim()) {
     throw new Error('Description is required');
@@ -61,6 +66,32 @@ const validateProductData = (data: ProductData, isUpdate: boolean = false): void
   // Validate that all additional image URLs are strings and not empty
   if (data.additionalImages.some(url => typeof url !== 'string' || !url.trim())) {
     throw new Error('All additional image URLs must be valid strings');
+  }
+
+  // Validate special offers array
+  if (!Array.isArray(data.specialOffers)) {
+    throw new Error('Special offers must be an array');
+  }
+
+  // Validate that all special offers are non-empty strings
+  if (data.specialOffers.some(offer => typeof offer !== 'string' || !offer.trim())) {
+    throw new Error('All special offers must be valid strings');
+  }
+
+  // Validate price formats
+  const priceRegex = /^\d+(\.\d{1,2})?$/;
+  if (!priceRegex.test(data.price)) {
+    throw new Error('Price must be a valid number with up to 2 decimal places');
+  }
+  if (!priceRegex.test(data.offeredPrice)) {
+    throw new Error('Offered price must be a valid number with up to 2 decimal places');
+  }
+
+  // Validate price logic
+  const price = parseFloat(data.price);
+  const offeredPrice = parseFloat(data.offeredPrice);
+  if (offeredPrice > price) {
+    throw new Error('Offered price cannot be greater than regular price');
   }
 };
 
@@ -152,6 +183,8 @@ export const isValidProductData = (data: unknown): data is ProductData => {
     isNonEmptyString(product.name) &&
     isNonEmptyString(product.category) &&
     isNonEmptyString(product.price) &&
+    isNonEmptyString(product.offeredPrice) &&
+    isValidStringArray(product.specialOffers) &&
     isNonEmptyString(product.description) &&
     isNonEmptyString(product.mainImage) &&
     isValidStringArray(product.additionalImages)
@@ -173,6 +206,8 @@ export const formatProductData = (data: ProductData): ProductData => {
     name: data.name.trim(),
     category: data.category.trim(),
     price: data.price.trim(),
+    offeredPrice: data.offeredPrice.trim(),
+    specialOffers: data.specialOffers.map(offer => offer.trim()),
     description: data.description.trim(),
     mainImage: data.mainImage.trim(),
     additionalImages: data.additionalImages.map(url => url.trim()),
