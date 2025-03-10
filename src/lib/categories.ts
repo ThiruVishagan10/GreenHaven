@@ -2,14 +2,14 @@ export const PRODUCT_CATEGORIES = {
     INDOOR_PLANTS: 'Indoor Plants',
     OUTDOOR_PLANTS: 'Outdoor Plants',
     SUCCULENTS: 'Succulents',
-    GARDENING_TOOLS: 'Gardening Tools'
+    FLOWERING_PLANTS: 'Flowering Plants'
   } as const;
   
   export const categoryOptions = [
     { value: PRODUCT_CATEGORIES.INDOOR_PLANTS, label: 'Indoor Plants' },
     { value: PRODUCT_CATEGORIES.OUTDOOR_PLANTS, label: 'Outdoor Plants' },
     { value: PRODUCT_CATEGORIES.SUCCULENTS, label: 'Succulents' },
-    { value: PRODUCT_CATEGORIES.GARDENING_TOOLS, label: 'Gardening Tools' }
+    { value: PRODUCT_CATEGORIES.FLOWERING_PLANTS, label: 'Flowering Plants' }
   ];
   
   export const allCategories = [
