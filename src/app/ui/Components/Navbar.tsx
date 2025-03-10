@@ -141,7 +141,8 @@
 // };
 
 // export default NavBar;
-// src/app/ui/Components/Navbar.tsx
+
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -172,7 +173,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const NavBar = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const { user, logOut } = UserAuth();
@@ -209,11 +210,14 @@ const NavBar = () => {
   ];
 
   const handleLogout = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
       await logOut();
       setDropdownOpen(false);
-      router.push("/");
+      // Clear any local storage or state if needed
+      localStorage.clear(); // Clear all local storage
+      // Redirect to home page
+      router.push('/');
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -377,7 +381,7 @@ const NavBar = () => {
                           <button 
                             onClick={handleLogout}
                             disabled={loading}
-                            className="w-full px-4 py-2 flex items-center gap-2 text-red-500"
+                            className="w-full px-4 py-2 flex items-center gap-2 text-red-500 hover:bg-red-50"
                           >
                             <LogOut size={18} />
                             {loading ? 'Logging out...' : 'Logout'}
@@ -508,7 +512,7 @@ const NavBar = () => {
                       <button
                         onClick={handleLogout}
                         disabled={loading}
-                        className="w-full flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-red-500"
+                        className="w-full flex items-center gap-2 px-4 py-2 rounded-md hover:bg-red-50 text-red-500"
                       >
                         <LogOut size={20} />
                         {loading ? 'Logging out...' : 'Logout'}
