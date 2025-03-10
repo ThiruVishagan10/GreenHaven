@@ -41,3 +41,9 @@ export interface Product {
     { value: "name-z-a", label: "Name: Z to A" },
     { value: "newest", label: "Newest First" }
   ];
+
+  export interface User {
+    id: string;
+    email: string;
+    favorites?: string[];
+  }

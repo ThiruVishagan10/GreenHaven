@@ -6,6 +6,7 @@ import { AuthContextProvider } from '@/lib/context/AuthContent';
 import { AdminAuthProvider } from '@/lib/context/AdminAuth';
 import NavBar from "./ui/Components/Navbar";
 import Footer from "./ui/Components/Footer";
+import { FavoritesProvider } from "@/lib/context/FavoritesContext";
 
 export default function RootLayout({
   children,
@@ -17,9 +18,11 @@ export default function RootLayout({
       <body>
         <AuthContextProvider>
           <AdminAuthProvider>
+            <FavoritesProvider>
             <NavBar/>
             {children}
             <Footer/>
+            </FavoritesProvider>
           </AdminAuthProvider>
         </AuthContextProvider>
       </body>

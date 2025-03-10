@@ -376,16 +376,18 @@
 //     </div>
 //   );
 // }
-
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { CircularProgress } from "@nextui-org/react";
 import Image from "next/image";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
 import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { motion } from "framer-motion";
+import { UserAuth } from "@/lib/context/AuthContent";
+import { useFavorites } from "@/lib/context/FavoritesContext";
 
 interface Product {
   id: string;
@@ -406,7 +408,9 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState<string>('');
-  const [isWishlist, setIsWishlist] = useState(false);
+  const router = useRouter();
+  const { user } = UserAuth();
+  const { favorites, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -417,8 +421,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         if (docSnap.exists()) {
           const productData = {
             id: docSnap.id,
-            ...docSnap.data() as Omit<Product, 'id'>
-          };
+            ...docSnap.data()
+          } as Product;
           setProduct(productData);
           setSelectedImage(productData.mainImage);
         } else {
@@ -443,11 +447,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     }
   };
 
-  const calculateDiscount = () => {
-    if (!product) return 0;
-    const originalPrice = parseFloat(product.price);
-    const discountedPrice = parseFloat(product.offeredPrice);
-    return Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (product) {
+      await toggleFavorite(product.id);
+    }
   };
 
   if (isLoading) {
@@ -460,11 +468,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   if (error || !product) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-500 mb-2">Error</h2>
-          <p className="text-gray-600">{error || "Product not found"}</p>
-        </div>
+      <div className="text-red-500 text-center py-4">
+        {error || 'Product not found'}
       </div>
     );
   }
@@ -486,11 +491,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                 />
-                {calculateDiscount() > 0 && (
-                  <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {calculateDiscount()}% OFF
-                  </div>
-                )}
+                <button
+                  onClick={handleFavoriteClick}
+                  className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200"
+                >
+                  <Heart
+                    size={20}
+                    className={`transition-colors ${
+                      favorites.has(product.id)
+                        ? "fill-red-500 text-red-500"
+                        : "fill-none text-gray-500"
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Thumbnail Images */}
@@ -616,20 +629,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 >
                   <ShoppingCart size={20} />
                   <span>Add to Cart</span>
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsWishlist(!isWishlist)}
-                  className={`flex items-center justify-center p-3 rounded-md border ${
-                    isWishlist 
-                      ? 'border-red-500 text-red-500' 
-                      : 'border-gray-300 text-gray-600'
-                  }`}
-                >
-                  <Heart 
-                    size={20} 
-                    fill={isWishlist ? "currentColor" : "none"} 
-                  />
                 </motion.button>
               </div>
             </div>
