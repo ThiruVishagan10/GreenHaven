@@ -376,6 +376,8 @@
 //     </div>
 //   );
 // }
+
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -388,6 +390,7 @@ import { Heart, Minus, Plus, ShoppingCart } from "lucide-react";
 import { motion } from "framer-motion";
 import { UserAuth } from "@/lib/context/AuthContent";
 import { useFavorites } from "@/lib/context/FavoritesContext";
+import { useCart } from "@/lib/context/CartContext";
 
 interface Product {
   id: string;
@@ -408,13 +411,17 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState<string>('');
+  const [addingToCart, setAddingToCart] = useState(false);
+
   const router = useRouter();
   const { user } = UserAuth();
   const { favorites, toggleFavorite } = useFavorites();
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
+        setIsLoading(true);
         const docRef = doc(db, "products", id);
         const docSnap = await getDoc(docRef);
 
@@ -441,20 +448,52 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   const handleQuantityChange = (action: 'increase' | 'decrease') => {
     if (action === 'increase') {
-      setQuantity(prev => prev + 1);
+      setQuantity(prev => Math.min(prev + 1, 10));
     } else if (action === 'decrease' && quantity > 1) {
       setQuantity(prev => prev - 1);
     }
   };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    
     if (!user) {
       router.push('/login');
       return;
     }
-    if (product) {
+    
+    if (!product) return;
+
+    try {
       await toggleFavorite(product.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (!product) return;
+
+    try {
+      setAddingToCart(true);
+      await addToCart({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        offeredPrice: product.offeredPrice,
+        quantity: quantity,
+        mainImage: product.mainImage
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -468,11 +507,23 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   if (error || !product) {
     return (
-      <div className="text-red-500 text-center py-4">
-        {error || 'Product not found'}
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-red-500 mb-4">{error || "Product not found"}</p>
+        <button
+          onClick={() => router.back()}
+          className="text-green-600 hover:text-green-700"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
+
+  const calculateDiscount = () => {
+    const originalPrice = parseFloat(product.price);
+    const discountedPrice = parseFloat(product.offeredPrice);
+    return Math.round(((originalPrice - discountedPrice) / originalPrice) * 100);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -481,7 +532,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-6 md:p-8">
             {/* Image Section */}
             <div className="space-y-4">
-              {/* Main Image */}
               <div className="relative aspect-square rounded-lg overflow-hidden">
                 <Image
                   src={selectedImage}
@@ -491,9 +541,16 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                 />
+                {calculateDiscount() > 0 && (
+                  <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-sm">
+                    {calculateDiscount()}% OFF
+                  </div>
+                )}
                 <button
                   onClick={handleFavoriteClick}
-                  className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200"
+                  className={`absolute top-2 right-2 p-2 rounded-full 
+                    ${favorites.has(product.id) ? 'bg-red-50' : 'bg-white'} 
+                    shadow-md hover:bg-gray-100 transition-all duration-200`}
                 >
                   <Heart
                     size={20}
@@ -507,48 +564,49 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               </div>
 
               {/* Thumbnail Images */}
-              <div className="flex space-x-2 overflow-x-auto">
-                <button
-                  onClick={() => setSelectedImage(product.mainImage)}
-                  className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 ${
-                    selectedImage === product.mainImage ? 'ring-2 ring-green-500' : ''
-                  }`}
-                >
-                  <Image
-                    src={product.mainImage}
-                    alt={product.name}
-                    fill
-                    className="object-cover"
-                    sizes="80px"
-                  />
-                </button>
-                {product.additionalImages?.map((image, index) => (
+              {(product.additionalImages?.length ?? 0) > 0 && (
+                <div className="flex space-x-2 overflow-x-auto">
                   <button
-                    key={index}
-                    onClick={() => setSelectedImage(image)}
+                    onClick={() => setSelectedImage(product.mainImage)}
                     className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 ${
-                      selectedImage === image ? 'ring-2 ring-green-500' : ''
+                      selectedImage === product.mainImage ? 'ring-2 ring-green-500' : ''
                     }`}
                   >
                     <Image
-                      src={image}
-                      alt={`${product.name} ${index + 1}`}
+                      src={product.mainImage}
+                      alt={product.name}
                       fill
                       className="object-cover"
                       sizes="80px"
                     />
                   </button>
-                ))}
-              </div>
+                  {product.additionalImages?.map((image, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(image)}
+                      className={`relative w-20 h-20 rounded-md overflow-hidden flex-shrink-0 ${
+                        selectedImage === image ? 'ring-2 ring-green-500' : ''
+                      }`}
+                    >
+                      <Image
+                        src={image}
+                        alt={`${product.name} ${index + 1}`}
+                        fill
+                        className="object-cover"
+                        sizes="80px"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Product Details Section */}
+            {/* Product Details */}
             <div className="flex flex-col">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
                 {product.name}
               </h1>
 
-              {/* Price Section */}
               <div className="flex items-baseline space-x-4 mb-6">
                 <span className="text-3xl font-bold text-green-600">
                   ₹{parseFloat(product.offeredPrice).toFixed(2)}
@@ -565,7 +623,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 )}
               </div>
 
-              {/* Category */}
               <div className="mb-6">
                 <p className="text-gray-600">
                   <span className="font-semibold">Category:</span> {product.category}
@@ -594,13 +651,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 </div>
               )}
 
-              {/* Description */}
               <div className="mb-6">
-                <h3 className="font-semibold text-gray-800 mb-2">Description</h3>
                 <p className="text-gray-600">{product.description}</p>
               </div>
 
-              {/* Quantity Selector */}
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-gray-700 font-medium">Quantity:</span>
                 <div className="flex items-center border border-gray-300 rounded-md">
@@ -615,22 +669,24 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <button
                     onClick={() => handleQuantityChange('increase')}
                     className="p-2 hover:bg-gray-100"
+                    disabled={quantity >= 10}
                   >
-                    <Plus size={20} className="text-gray-600" />
+                    <Plus size={20} className={quantity >= 10 ? 'text-gray-300' : 'text-gray-600'} />
                   </button>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-                <motion.button
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 bg-green-600 text-white py-3 px-6 rounded-md font-medium flex items-center justify-center space-x-2 hover:bg-green-700 transition-colors"
-                >
-                  <ShoppingCart size={20} />
-                  <span>Add to Cart</span>
-                </motion.button>
-              </div>
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleAddToCart}
+                disabled={addingToCart}
+                className={`w-full bg-green-600 text-white py-3 rounded-lg 
+                  ${addingToCart ? 'opacity-75 cursor-not-allowed' : 'hover:bg-green-700'}
+                  transition-colors flex items-center justify-center gap-2`}
+              >
+                <ShoppingCart size={20} />
+                {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
+              </motion.button>
             </div>
           </div>
         </div>

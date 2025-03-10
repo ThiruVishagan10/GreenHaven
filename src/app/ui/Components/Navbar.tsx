@@ -141,7 +141,6 @@
 // };
 
 // export default NavBar;
-
 // src/app/ui/Components/Navbar.tsx
 "use client";
 
@@ -161,11 +160,13 @@ import {
   Package,
   ShoppingCart,
   Phone,
-  Info
+  Info,
+  Store
 } from "lucide-react";
 import { UserAuth } from "@/lib/context/AuthContent";
 import { useAdminAuth } from "@/lib/context/AdminAuth";
 import { useFavorites } from "@/lib/context/FavoritesContext";
+import { useCart } from "@/lib/context/CartContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const NavBar = () => {
@@ -177,16 +178,31 @@ const NavBar = () => {
   const { user, logOut } = UserAuth();
   const { isAdmin } = useAdminAuth();
   const { getFavoriteCount } = useFavorites();
+  const { getCartCount } = useCart();
 
   // Close mobile menu when route changes
   useEffect(() => {
     setMobileMenuOpen(false);
+    setDropdownOpen(false);
   }, [pathname]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const menuItems = [
     { name: "Home", path: "/", icon: <Home size={20} /> },
     { name: "Products", path: "/product", icon: <Package size={20} /> },
-    { name: "Services", path: "/services", icon: <ShoppingCart size={20} /> },
+    { name: "Services", path: "/services", icon: <Store size={20} /> },
     { name: "Buy & Sell", path: "/buy", icon: <ShoppingBag size={20} /> },
     { name: "About", path: "/about", icon: <Info size={20} /> },
     { name: "Contact", path: "/contact", icon: <Phone size={20} /> },
@@ -200,8 +216,9 @@ const NavBar = () => {
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAdminNavigation = () => {
@@ -254,27 +271,45 @@ const NavBar = () => {
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center gap-4 relative">
             {user && (
-              <Link
-                href="/favorites"
-                className="relative text-gray-600 hover:text-green-600 transition-colors"
-              >
-                <Heart size={24} />
-                {getFavoriteCount() > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {getFavoriteCount()}
-                  </span>
-                )}
-              </Link>
+              <>
+                <Link
+                  href="/favorites"
+                  className="relative text-gray-600 hover:text-green-600 transition-colors"
+                >
+                  <Heart size={24} />
+                  {getFavoriteCount() > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {getFavoriteCount()}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  href="/cart"
+                  className="relative text-gray-600 hover:text-green-600 transition-colors"
+                >
+                  <ShoppingCart size={24} />
+                  {getCartCount() > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-green-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {getCartCount()}
+                    </span>
+                  )}
+                </Link>
+              </>
             )}
 
             {user ? (
-              <div className="relative">
+              <div className="relative dropdown-container">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 text-gray-700 hover:text-black focus:outline-none"
                 >
                   {getUserDisplayImage()}
-                  <ChevronDown size={20} className={`transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown 
+                    size={20} 
+                    className={`transition-transform duration-200 ${
+                      dropdownOpen ? 'rotate-180' : ''
+                    }`} 
+                  />
                 </button>
 
                 <AnimatePresence>
@@ -283,25 +318,48 @@ const NavBar = () => {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
                       className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-md overflow-hidden"
                     >
                       <ul className="text-gray-700">
                         <li className="hover:bg-gray-50">
-                          <Link href="/profile" className="px-4 py-2 flex items-center gap-2">
+                          <Link 
+                            href="/profile" 
+                            className="px-4 py-2 flex items-center gap-2"
+                            onClick={() => setDropdownOpen(false)}
+                          >
                             <User size={18} />
                             Profile
                           </Link>
                         </li>
                         <li className="hover:bg-gray-50">
-                          <Link href="/orders" className="px-4 py-2 flex items-center gap-2">
+                          <Link 
+                            href="/orders" 
+                            className="px-4 py-2 flex items-center gap-2"
+                            onClick={() => setDropdownOpen(false)}
+                          >
                             <ShoppingBag size={18} />
                             Orders
                           </Link>
                         </li>
                         <li className="hover:bg-gray-50">
-                          <Link href="/favorites" className="px-4 py-2 flex items-center gap-2">
+                          <Link 
+                            href="/favorites" 
+                            className="px-4 py-2 flex items-center gap-2"
+                            onClick={() => setDropdownOpen(false)}
+                          >
                             <Heart size={18} />
                             Favorites
+                          </Link>
+                        </li>
+                        <li className="hover:bg-gray-50">
+                          <Link 
+                            href="/cart" 
+                            className="px-4 py-2 flex items-center gap-2"
+                            onClick={() => setDropdownOpen(false)}
+                          >
+                            <ShoppingCart size={18} />
+                            Cart
                           </Link>
                         </li>
                         {isAdmin && (
@@ -318,10 +376,11 @@ const NavBar = () => {
                         <li className="hover:bg-gray-50">
                           <button 
                             onClick={handleLogout}
+                            disabled={loading}
                             className="w-full px-4 py-2 flex items-center gap-2 text-red-500"
                           >
                             <LogOut size={18} />
-                            Logout
+                            {loading ? 'Logging out...' : 'Logout'}
                           </button>
                         </li>
                       </ul>
@@ -331,12 +390,15 @@ const NavBar = () => {
               </div>
             ) : (
               <div className="flex items-center gap-4">
-                <Link href="/login" className="text-gray-600 hover:text-black">
+                <Link 
+                  href="/login" 
+                  className="text-gray-600 hover:text-black transition-colors"
+                >
                   Sign In
                 </Link>
                 <Link
                   href="/signup"
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
                   Sign Up
                 </Link>
@@ -348,6 +410,7 @@ const NavBar = () => {
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden text-gray-600 hover:text-black"
+            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -360,6 +423,7 @@ const NavBar = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
               className="md:hidden mt-4"
             >
               <ul className="flex flex-col space-y-2">
@@ -370,6 +434,7 @@ const NavBar = () => {
                       className={`flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 ${
                         pathname === item.path ? "text-green-700 font-semibold" : "text-gray-600"
                       }`}
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       {item.icon}
                       {item.name}
@@ -382,6 +447,7 @@ const NavBar = () => {
                       <Link
                         href="/favorites"
                         className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-gray-600"
+                        onClick={() => setMobileMenuOpen(false)}
                       >
                         <Heart size={20} />
                         Favorites
@@ -394,8 +460,24 @@ const NavBar = () => {
                     </li>
                     <li>
                       <Link
+                        href="/cart"
+                        className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-gray-600"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <ShoppingCart size={20} />
+                        Cart
+                        {getCartCount() > 0 && (
+                          <span className="bg-green-600 text-white text-xs rounded-full px-2 py-1">
+                            {getCartCount()}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
                         href="/profile"
                         className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-gray-600"
+                        onClick={() => setMobileMenuOpen(false)}
                       >
                         <User size={20} />
                         Profile
@@ -405,6 +487,7 @@ const NavBar = () => {
                       <Link
                         href="/orders"
                         className="flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-gray-600"
+                        onClick={() => setMobileMenuOpen(false)}
                       >
                         <ShoppingBag size={20} />
                         Orders
@@ -424,10 +507,11 @@ const NavBar = () => {
                     <li>
                       <button
                         onClick={handleLogout}
+                        disabled={loading}
                         className="w-full flex items-center gap-2 px-4 py-2 rounded-md hover:bg-gray-50 text-red-500"
                       >
                         <LogOut size={20} />
-                        Logout
+                        {loading ? 'Logging out...' : 'Logout'}
                       </button>
                     </li>
                   </>
@@ -436,12 +520,14 @@ const NavBar = () => {
                     <Link
                       href="/login"
                       className="w-full text-center py-2 text-gray-600 hover:text-black"
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/signup"
                       className="w-full text-center bg-green-600 text-white py-2 rounded-lg hover:bg-green-700"
+                      onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign Up
                     </Link>
