@@ -25,12 +25,14 @@
 "use client";
 
 import ProductList from "@/app/ui/Components/Product/IndoorPlants/ProductList";
+import ProductListComponent from "@/app/ui/Components/Product/ProductListComponent";
 import React from 'react'
 
 const IndoorPlants = () => {
   return (
     <div>
-      <ProductList />
+      {/* <ProductList /> */}
+      <ProductListComponent category="Indoor Plants" />;
     </div>
   )
 }

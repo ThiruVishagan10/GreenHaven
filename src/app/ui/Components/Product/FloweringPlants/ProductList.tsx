@@ -177,7 +177,6 @@
 // export default ProductList;
 
 
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -213,6 +212,7 @@ export default function ProductList() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMaintenance, setSelectedMaintenance] = useState("all");
   const [priceRange, setPriceRange] = useState(1000);
@@ -226,19 +226,18 @@ export default function ProductList() {
         const q = query(productsRef, where("category", "==", "Flowering Plants"));
         const querySnapshot = await getDocs(q);
         
-        const FloweringPlants: Product[] = [];
+        const floweringPlants: Product[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data() as Omit<Product, 'id'>;
-          FloweringPlants.push({
+          floweringPlants.push({
             id: doc.id,
             ...data,
           });
         });
 
-        console.log("Fetched Flowering plants:", FloweringPlants);
-        setProducts(FloweringPlants);
+        setProducts(floweringPlants);
       } catch (err) {
-        console.error("Error fetching Flowering plants:", err);
+        console.error("Error fetching flowering plants:", err);
         setError('Failed to fetch products');
       } finally {
         setIsLoading(false);
@@ -248,7 +247,6 @@ export default function ProductList() {
     fetchFloweringPlants();
   }, []);
 
-  // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, selectedMaintenance, priceRange]);
@@ -262,17 +260,27 @@ export default function ProductList() {
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    setInputValue(e.target.value);
+  };
+
+  const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setSearchQuery((e.target as HTMLInputElement).value);
+    }
+  };
+
+  const handleSearchSubmit = () => {
+    setSearchQuery(inputValue);
   };
 
   const resetFilters = () => {
+    setInputValue("");
     setSearchQuery("");
     setSelectedMaintenance("all");
     setPriceRange(1000);
     setIsMobileFiltersOpen(false);
   };
 
-  // Filter products
   const filteredProducts = products.filter((product) => {
     const searchTerms = searchQuery.toLowerCase().split(' ');
     const productName = product.name.toLowerCase();
@@ -290,7 +298,6 @@ export default function ProductList() {
     return matchesSearch && matchesMaintenance && matchesPrice;
   });
 
-  // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   const currentProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
@@ -299,19 +306,26 @@ export default function ProductList() {
 
   const SearchAndFilters = () => (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-        <input
-          type="text"
-          placeholder="Search plants..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
-        />
+      <div className="relative flex">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search plants..."
+            value={inputValue}
+            onChange={handleSearchChange}
+            onKeyPress={handleSearchKeyPress}
+            className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
+          />
+        </div>
+        <button
+          onClick={handleSearchSubmit}
+          className="ml-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+        >
+          Search
+        </button>
       </div>
 
-      {/* Maintenance Filter */}
       <div>
         <label className="text-sm font-semibold block mb-2">
           Maintenance Level
@@ -329,7 +343,6 @@ export default function ProductList() {
         </select>
       </div>
 
-      {/* Price Range */}
       <div>
         <label className="text-sm font-semibold block mb-2">
           Maximum Price: ₹{priceRange}
@@ -344,7 +357,6 @@ export default function ProductList() {
         />
       </div>
 
-      {/* Active Filters */}
       {(searchQuery || selectedMaintenance !== "all" || priceRange < 1000) && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between items-center mb-2">
@@ -361,7 +373,10 @@ export default function ProductList() {
               <div className="flex items-center justify-between">
                 <span className="text-sm truncate flex-1 mr-2">Search: {searchQuery}</span>
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setInputValue("");
+                  }}
                   className="text-red-500 text-sm flex-shrink-0"
                 >
                   ×
@@ -405,7 +420,6 @@ export default function ProductList() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Filter Button */}
       <div className="lg:hidden fixed bottom-4 right-4 z-50">
         <button
           onClick={() => setIsMobileFiltersOpen(true)}
@@ -416,7 +430,6 @@ export default function ProductList() {
         </button>
       </div>
 
-      {/* Mobile Filters Modal */}
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileFiltersOpen(false)} />
@@ -438,7 +451,6 @@ export default function ProductList() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-4">
               <h3 className="text-lg font-bold mb-4">Filters</h3>
@@ -446,7 +458,6 @@ export default function ProductList() {
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="flex-1">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-800">Flowering Plants</h1>
@@ -455,17 +466,25 @@ export default function ProductList() {
               </span>
             </div>
 
-            {/* Mobile Search */}
             <div className="lg:hidden mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search plants..."
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
+              <div className="relative flex">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Search plants..."
+                    value={inputValue}
+                    onChange={handleSearchChange}
+                    onKeyPress={handleSearchKeyPress}
+                    className="w-full border border-gray-300 rounded-md pl-10 pr-4 py-2 text-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+                <button
+                  onClick={handleSearchSubmit}
+                  className="ml-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Search
+                </button>
               </div>
             </div>
             
@@ -502,7 +521,6 @@ export default function ProductList() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-4 mt-8">
                 <button

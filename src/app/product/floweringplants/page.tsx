@@ -2,12 +2,14 @@
 
 
 import ProductList from '@/app/ui/Components/Product/FloweringPlants/ProductList';
+import ProductListComponent from '@/app/ui/Components/Product/ProductListComponent';
 import React from 'react'
 
 const FloweringPlants = () => {
   return (
     <div>
-      <ProductList />
+      {/* <ProductList /> */}
+      <ProductListComponent category="Flowering Plants" />;
     </div>
   )
 }

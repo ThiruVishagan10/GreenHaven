@@ -5,12 +5,14 @@ import Slider from "react-slick";
 import Image from "next/image";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useRouter } from "next/navigation";
 
 interface PlantCategory {
   id: number;
   name: string;
   image: string;
   description: string;
+  path: string; 
 }
 
 interface SliderProps {
@@ -40,6 +42,12 @@ const CustomSlider: React.FC<SliderProps> = ({ items }) => {
     ],
   };
 
+  const router = useRouter();
+  
+const handleExploreClick = (path: string) => {
+  router.push(path);
+};
+
   return (
     <Slider {...settings} className="w-full">
       {items.map((item) => (
@@ -54,9 +62,13 @@ const CustomSlider: React.FC<SliderProps> = ({ items }) => {
             />
             <h4 className="text-lg font-semibold">{item.name}</h4>
             <p className="text-gray-600 text-sm mt-2">{item.description}</p>
-            <button className="mt-4 px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition">
-              Explore More
-            </button>
+            <button 
+    onClick={() => handleExploreClick(item.path)}
+    className="mt-4 px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition"
+  >
+    Explore More
+  </button>
+
           </div>
         </div>
       ))}

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { CircularProgress } from "@nextui-org/react";
-import BuyCard from "../../BuyCard";
+import BuyCard from "../BuyCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../../../../../firebase";
+import { db } from "../../../../../firebase";
 
 interface Product {
   id: string;
@@ -20,6 +20,13 @@ interface Product {
   maintenance?: string;
 }
 
+interface ProductListProps {
+  category: string;
+  itemsPerPage?: number;
+  initialPriceRange?: number;
+  className?: string;
+}
+
 const maintenanceCategories = [
   { value: "all", label: "All Maintenance" },
   { value: "Low Maintenance", label: "Low Maintenance" },
@@ -27,46 +34,50 @@ const maintenanceCategories = [
   { value: "High Maintenance", label: "High Maintenance" },
 ];
 
-export default function ProductList() {
+export default function ProductListComponent({ 
+  category,
+  itemsPerPage = 9,
+  initialPriceRange = 1000,
+  className = ""
+}: ProductListProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [inputValue, setInputValue] = useState(""); // New state for input value
+  const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMaintenance, setSelectedMaintenance] = useState("all");
-  const [priceRange, setPriceRange] = useState(1000);
+  const [priceRange, setPriceRange] = useState(initialPriceRange);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const itemsPerPage = 9;
 
   useEffect(() => {
-    const fetchOutdoorPlants = async () => {
+    const fetchProducts = async () => {
       try {
         const productsRef = collection(db, "products");
-        const q = query(productsRef, where("category", "==", "Outdoor Plants"));
+        const q = query(productsRef, where("category", "==", category));
         const querySnapshot = await getDocs(q);
         
-        const outdoorPlants: Product[] = [];
+        const fetchedProducts: Product[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data() as Omit<Product, 'id'>;
-          outdoorPlants.push({
+          fetchedProducts.push({
             id: doc.id,
             ...data,
           });
         });
 
-        setProducts(outdoorPlants);
+        setProducts(fetchedProducts);
       } catch (err) {
-        console.error("Error fetching outdoor plants:", err);
+        console.error(`Error fetching ${category}:`, err);
         setError('Failed to fetch products');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchOutdoorPlants();
-  }, []);
+    fetchProducts();
+  }, [category]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -80,7 +91,6 @@ export default function ProductList() {
     setSelectedMaintenance(e.target.value);
   };
 
-  // New search handling functions
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
   };
@@ -99,7 +109,7 @@ export default function ProductList() {
     setInputValue("");
     setSearchQuery("");
     setSelectedMaintenance("all");
-    setPriceRange(1000);
+    setPriceRange(initialPriceRange);
     setIsMobileFiltersOpen(false);
   };
 
@@ -128,7 +138,6 @@ export default function ProductList() {
 
   const SearchAndFilters = () => (
     <div className="space-y-4">
-      {/* Updated Search Bar with button */}
       <div className="relative flex">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -149,7 +158,6 @@ export default function ProductList() {
         </button>
       </div>
 
-      {/* Rest of the filters remain the same */}
       <div>
         <label className="text-sm font-semibold block mb-2">
           Maintenance Level
@@ -181,8 +189,7 @@ export default function ProductList() {
         />
       </div>
 
-      {/* Active Filters */}
-      {(searchQuery || selectedMaintenance !== "all" || priceRange < 1000) && (
+      {(searchQuery || selectedMaintenance !== "all" || priceRange < initialPriceRange) && (
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-semibold">Active Filters</h4>
@@ -243,13 +250,8 @@ export default function ProductList() {
     );
   }
 
-  // Rest of your component remains the same...
-  // (Including the return statement with the main layout)
-  // Just make sure to update the mobile search input with the same new search functionality
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile Filter Button */}
+    <div className={`min-h-screen bg-gray-50 ${className}`}>
       <div className="lg:hidden fixed bottom-4 right-4 z-50">
         <button
           onClick={() => setIsMobileFiltersOpen(true)}
@@ -260,7 +262,6 @@ export default function ProductList() {
         </button>
       </div>
 
-      {/* Mobile Filters Modal */}
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileFiltersOpen(false)} />
@@ -282,7 +283,6 @@ export default function ProductList() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-4">
               <h3 className="text-lg font-bold mb-4">Filters</h3>
@@ -290,16 +290,14 @@ export default function ProductList() {
             </div>
           </aside>
 
-          {/* Main Content */}
           <main className="flex-1">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">Outdoor Plants</h1>
+              <h1 className="text-2xl font-bold text-gray-800">{category}</h1>
               <span className="text-sm text-gray-500">
                 {filteredProducts.length} products
               </span>
             </div>
 
-            {/* Mobile Search */}
             <div className="lg:hidden mb-6">
               <div className="relative flex">
                 <div className="relative flex-1">
@@ -355,7 +353,6 @@ export default function ProductList() {
               </motion.div>
             </AnimatePresence>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center space-x-4 mt-8">
                 <button
