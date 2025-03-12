@@ -1,50 +1,82 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import CustomSlider from "../CustomSlider";
 import { useRouter } from "next/navigation";
+import { db } from "../../../../../firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { CircularProgress } from "@nextui-org/react";
+import { Product } from "../../../../types/product";
 
-const plants = [
-  {
-    id: 1,
-    name: "Roses",
-    image: "/images/roses.jpg",
-    description:
-      "Classic symbols of love and beauty, our roses come in various colors and varieties.",
-  },
-  {
-    id: 2,
-    name: "Hibiscus",
-    image: "/images/hibiscus.jpg",
-    description:
-      "Bright and tropical, hibiscus flowers add a burst of color to any garden.",
-  },
-  {
-    id: 3,
-    name: "Marigold",
-    image: "/images/marigold.jpg",
-    description:
-      "Cheerful and easy to grow, perfect for adding vibrant colors to gardens.",
-  },
-  {
-    id: 4,
-    name: "Jasmine",
-    image: "/images/jasmine.jpg",
-    description:
-      "Famous for its fragrant blossoms, jasmine is a delightful addition to any space.",
-  },
-];
+
 
 const IndoorPlants = () => {
   const router = useRouter(); // ✅ Moved inside the component
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const fetchIndoorPlants = async () => {
+      try {
+        setIsLoading(true);
+        const productsRef = collection(db, "products");
+        const q = query(productsRef, where("category", "==", "Indoor Plants"));
+        const querySnapshot = await getDocs(q);
+        
+        const indoorPlants: Product[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data() as Omit<Product, 'id'>;
+          indoorPlants.push({
+            id: doc.id,
+            ...data,
+          });
+        });
+
+        setProducts(indoorPlants);
+      } catch (err) {
+        console.error("Error fetching indoor plants:", err);
+        setError('Failed to fetch products');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchIndoorPlants();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <CircularProgress />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-500 text-center py-4">
+        {error}
+      </div>
+    );
+  }
+
+  // Take only the first 6 products for the slider
+  const featuredProducts = products.slice(0, 6);
+
 
   return (
     <section className="py-12 bg-pink-50">
       <div className="container mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold mb-6">Featured Indoor Plants</h2>
         <CustomSlider
-          items={plants.map((plant) => ({
-            ...plant,
+           items={featuredProducts.map((product) => ({
+            id: product.id,
+            name: product.name,
+            image: product.mainImage,
+            description: product.description,
+            price: product.price,
+            offeredPrice: product.offeredPrice,
+            path: `/product/${product.id}`,
             action: (
               <button
                 className="mt-4 px-4 py-2 bg-black text-white rounded-md hover:bg-gray-800 transition"
