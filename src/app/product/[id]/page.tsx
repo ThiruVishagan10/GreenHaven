@@ -448,7 +448,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   const handleQuantityChange = (action: 'increase' | 'decrease') => {
     if (action === 'increase') {
-      setQuantity(prev => Math.min(prev + 1, 10));
+      setQuantity(prev => Math.min(prev + 1, 20));
     } else if (action === 'decrease' && quantity > 1) {
       setQuantity(prev => prev - 1);
     }

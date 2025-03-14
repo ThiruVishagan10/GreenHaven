@@ -5,14 +5,7 @@ import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, setDoc } from 'firebas
 import { db } from '../../../firebase';
 import { UserAuth } from './AuthContent'; // Update this import to use UserAuth
 
-// Types
-interface FavoritesContextType {
-  favorites: Set<string>;
-  isLoading: boolean;
-  toggleFavorite: (productId: string) => Promise<void>;
-  isFavorite: (productId: string) => boolean;
-  getFavoriteCount: () => number;
-}
+import { FavoritesContextType } from '../../types/product';
 
 interface FavoritesProviderProps {
   children: React.ReactNode;

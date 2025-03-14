@@ -8,6 +8,7 @@ import NavBar from "./ui/Components/Navbar";
 import Footer from "./ui/Components/Footer";
 import { FavoritesProvider } from "@/lib/context/FavoritesContext";
 import { CartProvider } from "@/lib/context/CartContext";
+import { UserProvider } from "@/lib/context/UserContext";
 
 export default function RootLayout({
   children,
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <AuthContextProvider>
           <AdminAuthProvider>
+          <UserProvider>
             <CartProvider>
             <FavoritesProvider>
             <NavBar/>
@@ -26,6 +28,7 @@ export default function RootLayout({
             <Footer/>
             </FavoritesProvider>
             </CartProvider>
+            </UserProvider>
           </AdminAuthProvider>
         </AuthContextProvider>
       </body>

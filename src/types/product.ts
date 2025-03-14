@@ -47,3 +47,57 @@ export interface Product {
     email: string;
     favorites?: string[];
   }
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  avatar?: string;
+  phoneNumber?: string;
+  address?: Address;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  items: OrderItem[];
+  total: number;
+  status: OrderStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderItem {
+  productId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+}
+export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+
+
+export interface Address {
+  street: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault?: boolean;
+}
+
+export interface FavoritesContextType {
+  favorites: Set<string>;
+  isLoading: boolean;
+  addresses: Address[];
+  toggleFavorite: (productId: string) => Promise<void>;
+  isFavorite: (productId: string) => boolean;
+  getFavoriteCount: () => number;
+  addAddress: (address: Address) => Promise<void>;
+  updateAddress: (index: number, address: Address) => Promise<void>;
+  removeAddress: (index: number) => Promise<void>;
+  setDefaultAddress: (index: number) => Promise<void>;
+}
