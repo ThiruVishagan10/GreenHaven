@@ -1,337 +1,171 @@
-// "use client";
-
-// import { createContext, useContext, useState, useEffect } from 'react';
-// import { UserAuth } from './AuthContent';
-// import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-// import { db } from '../../../firebase';
-
-// interface CartItem {
-//   id: string;
-//   name: string;
-//   price: string;
-//   offeredPrice: string;
-//   quantity: number;
-//   mainImage: string;
-// }
-
-// interface CartContextType {
-//   cart: CartItem[];
-//   addToCart: (product: CartItem) => Promise<void>;
-//   removeFromCart: (productId: string) => Promise<void>;
-//   updateQuantity: (productId: string, quantity: number) => Promise<void>;
-//   clearCart: () => Promise<void>;
-//   getCartTotal: () => number;
-//   getCartCount: () => number;
-//   isLoading: boolean;
-// }
-
-// const CartContext = createContext<CartContextType | undefined>(undefined);
-
-// export function CartProvider({ children }: { children: React.ReactNode }) {
-//   const [cart, setCart] = useState<CartItem[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const { user } = UserAuth();
-
-//   // Load cart from Firestore when user changes
-//   useEffect(() => {
-//     const loadCart = async () => {
-//       if (!user) {
-//         setCart([]);
-//         setIsLoading(false);
-//         return;
-//       }
-
-//       try {
-//         setIsLoading(true);
-//         const cartDoc = await getDoc(doc(db, 'carts', user.uid));
-//         if (cartDoc.exists()) {
-//           setCart(cartDoc.data().items || []);
-//         } else {
-//           // Initialize cart document if it doesn't exist
-//           await setDoc(doc(db, 'carts', user.uid), { items: [] });
-//           setCart([]);
-//         }
-//       } catch (error) {
-//         console.error('Error loading cart:', error);
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
-
-//     loadCart();
-//   }, [user]);
-
-//   // Save cart to Firestore whenever it changes
-//   useEffect(() => {
-//     const saveCart = async () => {
-//       if (!user) return;
-
-//       try {
-//         await updateDoc(doc(db, 'carts', user.uid), {
-//           items: cart,
-//           updatedAt: new Date().toISOString()
-//         });
-//       } catch (error) {
-//         console.error('Error saving cart:', error);
-//       }
-//     };
-
-//     if (!isLoading) {
-//       saveCart();
-//     }
-//   }, [cart, user, isLoading]);
-
-//   const addToCart = async (product: CartItem) => {
-//     setCart(currentCart => {
-//       const existingItem = currentCart.find(item => item.id === product.id);
-      
-//       if (existingItem) {
-//         return currentCart.map(item =>
-//           item.id === product.id
-//             ? { ...item, quantity: item.quantity + product.quantity }
-//             : item
-//         );
-//       }
-      
-//       return [...currentCart, product];
-//     });
-//   };
-
-//   const removeFromCart = async (productId: string) => {
-//     setCart(currentCart => currentCart.filter(item => item.id !== productId));
-//   };
-
-//   const updateQuantity = async (productId: string, quantity: number) => {
-//     if (quantity < 1) return;
-    
-//     setCart(currentCart =>
-//       currentCart.map(item =>
-//         item.id === productId ? { ...item, quantity } : item
-//       )
-//     );
-//   };
-
-//   const clearCart = async () => {
-//     setCart([]);
-//   };
-
-//   const getCartTotal = () => {
-//     return cart.reduce((total, item) => {
-//       return total + (parseFloat(item.offeredPrice) * item.quantity);
-//     }, 0);
-//   };
-
-//   const getCartCount = () => {
-//     return cart.reduce((count, item) => count + item.quantity, 0);
-//   };
-
-//   return (
-//     <CartContext.Provider
-//       value={{
-//         cart,
-//         addToCart,
-//         removeFromCart,
-//         updateQuantity,
-//         clearCart,
-//         getCartTotal,
-//         getCartCount,
-//         isLoading
-//       }}
-//     >
-//       {children}
-//     </CartContext.Provider>
-//   );
-// }
-
-// export const useCart = () => {
-//   const context = useContext(CartContext);
-//   if (context === undefined) {
-//     throw new Error('useCart must be used within a CartProvider');
-//   }
-//   return context;
-// };
 
 "use client";
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { UserAuth } from './AuthContent';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../firebase';
+import { UserAuth } from './AuthContent';
 
 interface CartItem {
   id: string;
   name: string;
   price: string;
   offeredPrice: string;
+  mainImage: string | null;
   quantity: number;
-  mainImage: string;
 }
 
 interface CartContextType {
-  cart: CartItem[];
-  addToCart: (product: CartItem) => Promise<void>;
-  removeFromCart: (productId: string) => Promise<void>;
-  updateQuantity: (productId: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
-  getCartTotal: () => number;
+  cartItems: CartItem[];
+  addToCart: (item: CartItem) => Promise<void>;
+  removeFromCart: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  isItemInCart: (itemId: string) => boolean;
+  getCartTotal: () => { subtotal: number; savings: number };
   getCartCount: () => number;
-  isItemInCart: (productId: string) => boolean;
   isLoading: boolean;
-  user: any;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = UserAuth();
 
-  // Load cart from Firestore when user changes
+  // Fetch cart from Firestore
   useEffect(() => {
-    const loadCart = async () => {
-      setIsLoading(true);
-      
-      // Clear cart if no user is logged in
+    const fetchCart = async () => {
       if (!user) {
-        setCart([]);
+        setCartItems([]);
         setIsLoading(false);
         return;
       }
 
       try {
         const cartDoc = await getDoc(doc(db, 'carts', user.uid));
-        
         if (cartDoc.exists()) {
-          setCart(cartDoc.data().items || []);
+          setCartItems(cartDoc.data().items || []);
         } else {
-          // Initialize empty cart for new users
-          await setDoc(doc(db, 'carts', user.uid), {
-            items: [],
-            userId: user.uid,
-            createdAt: new Date().toISOString()
-          });
-          setCart([]);
+          await setDoc(doc(db, 'carts', user.uid), { items: [] });
+          setCartItems([]);
         }
       } catch (error) {
-        console.error('Error loading cart:', error);
-        setCart([]);
+        console.error('Error fetching cart:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadCart();
-  }, [user]); // Only depend on user changes
+    fetchCart();
+  }, [user]);
 
-  // Save cart to Firestore whenever it changes
-  useEffect(() => {
-    const saveCart = async () => {
-      if (!user || isLoading) return;
+  const addToCart = async (newItem: CartItem) => {
+    if (!user) return;
 
-      try {
-        await updateDoc(doc(db, 'carts', user.uid), {
-          items: cart,
-          updatedAt: new Date().toISOString(),
-          userId: user.uid
-        });
-      } catch (error) {
-        console.error('Error saving cart:', error);
-      }
-    };
+    try {
+      setIsLoading(true);
+      const cartRef = doc(db, 'carts', user.uid);
+      const existingItemIndex = cartItems.findIndex(item => item.id === newItem.id);
 
-    saveCart();
-  }, [cart, user, isLoading]);
-
-  const addToCart = async (product: CartItem) => {
-    if (!user) {
-      console.error('User must be logged in to add items to cart');
-      return;
-    }
-
-    setCart(currentCart => {
-      const existingItem = currentCart.find(item => item.id === product.id);
-      
-      if (existingItem) {
-        return currentCart.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + product.quantity }
+      let updatedItems: CartItem[];
+      if (existingItemIndex !== -1) {
+        // Update existing item
+        updatedItems = cartItems.map((item, index) => 
+          index === existingItemIndex 
+            ? { ...item, quantity: newItem.quantity }
             : item
         );
+      } else {
+        // Add new item
+        updatedItems = [...cartItems, newItem];
       }
-      
-      return [...currentCart, product];
-    });
-  };
 
-  const removeFromCart = async (productId: string) => {
-    if (!user) return;
-    setCart(currentCart => currentCart.filter(item => item.id !== productId));
-  };
-
-  const updateQuantity = async (productId: string, quantity: number) => {
-    if (!user || quantity < 1) return;
-    
-    setCart(currentCart =>
-      currentCart.map(item =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
-  };
-
-  const clearCart = async () => {
-    if (!user) return;
-    
-    try {
-      await updateDoc(doc(db, 'carts', user.uid), {
-        items: [],
-        updatedAt: new Date().toISOString(),
-        userId: user.uid
-      });
-      setCart([]);
+      await updateDoc(cartRef, { items: updatedItems });
+      setCartItems(updatedItems);
     } catch (error) {
-      console.error('Error clearing cart:', error);
+      console.error('Error adding to cart:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getCartTotal = () => {
-    return cart.reduce((total, item) => {
-      return total + (parseFloat(item.offeredPrice) * item.quantity);
-    }, 0);
+  const removeFromCart = async (itemId: string) => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      const cartRef = doc(db, 'carts', user.uid);
+      const updatedItems = cartItems.filter(item => item.id !== itemId);
+      await updateDoc(cartRef, { items: updatedItems });
+      setCartItems(updatedItems);
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (!user || quantity < 1 || quantity > 10) return;
+
+    try {
+      setIsLoading(true);
+      const cartRef = doc(db, 'carts', user.uid);
+      const updatedItems = cartItems.map(item =>
+        item.id === itemId ? { ...item, quantity } : item
+      );
+      await updateDoc(cartRef, { items: updatedItems });
+      setCartItems(updatedItems);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isItemInCart = (itemId: string) => {
+    return cartItems.some(item => item.id === itemId);
   };
 
   const getCartCount = () => {
-    return cart.reduce((count, item) => count + item.quantity, 0);
+    return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const isItemInCart = (productId: string) => {
-    return cart.some(item => item.id === productId);
+  const getCartTotal  = () => {
+    const subtotal = cartItems.reduce((total, item) => {
+      return total + parseFloat(item.offeredPrice) * item.quantity;
+    }, 0);
+
+    const savings = cartItems.reduce((total, item) => {
+      const originalPrice = parseFloat(item.price) * item.quantity;
+      const discountedPrice = parseFloat(item.offeredPrice) * item.quantity;
+      return total + (originalPrice - discountedPrice);
+    }, 0);
+
+    return { subtotal, savings };
   };
 
   return (
-    <CartContext.Provider
-      value={{
-        cart,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        getCartTotal,
-        getCartCount,
-        isItemInCart,
-        isLoading,
-        user
-      }}
-    >
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      isItemInCart,
+      getCartTotal,
+      getCartCount,
+      isLoading,
+    }}>
       {children}
     </CartContext.Provider>
   );
 }
 
-export const useCart = () => {
+export function useCart() {
   const context = useContext(CartContext);
   if (context === undefined) {
     throw new Error('useCart must be used within a CartProvider');
   }
   return context;
-};
+}

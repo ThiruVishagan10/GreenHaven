@@ -1,128 +1,196 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/app/ui/card";
-import { Input } from "@/app/ui/input";
+import { useState } from "react";
+import { UserAuth } from "../../lib/context/AuthContent"; // Adjust the import path as needed
 import { Button } from "@/app/ui/button";
 import { FcGoogle } from "react-icons/fc";
-import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { UserAuth } from "@/lib/context/AuthContent";
-import { handleSignUp } from "../api/signup";
 
-export default function Signup() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(true);
+export default function SignUp() {
+  const { emailSignUp, googleSignIn, error, loading } = UserAuth();
   const router = useRouter();
-
-  const { user, googleSignIn } = UserAuth();
-
   
+  const [formData, setFormData] = useState({
+    displayName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setFormError(null); // Clear form error when user types
+  };
+
   const handleEmailSignUp = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent form submission default behavior
-    setLoading(true);
+    e.preventDefault();
+    setFormError(null);
+
+    // Form validation
+    if (!formData.displayName || !formData.email || !formData.password) {
+      setFormError("All fields are required");
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setFormError("Passwords do not match");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setFormError("Password must be at least 6 characters");
+      return;
+    }
+
     try {
-      await handleSignUp({
-        email,
-        password,
-        fullName
-      });
+      await emailSignUp(formData.email, formData.password, formData.displayName);
       router.push("/");
     } catch (error) {
-      console.error("Sign Up Error:", error);
-      // You might want to show this error to the user through a toast or alert
+      // Error is handled by the context, but you can add additional handling here
+      console.error("Signup error:", error);
     }
-    setLoading(false);
   };
-  
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignUp = async () => {
     try {
       await googleSignIn();
-      router.push("/");
-    } catch (error) {
-      console.error("Google Sign In Error:", error);
+      router.push("/"); 
+      console.error("Google signup error:", error);
     }
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
-      <Card className="w-full max-w-md p-6 shadow-xl rounded-2xl bg-white">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold text-gray-800">
-            Create an Account
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleEmailSignUp} className="space-y-4">
-            <Input 
-              placeholder="Full Name" 
-              type="text" 
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required 
-              className="p-3 rounded-lg" 
-            />
-            <Input 
-              placeholder="Email Address" 
-              type="email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
-              className="p-3 rounded-lg" 
-            />
-            <Input 
-              placeholder="Password" 
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-              className="p-3 rounded-lg" 
-            />
-            <Input 
-              placeholder="Confirm Password" 
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required 
-              className="p-3 rounded-lg" 
-            />
-            <Button 
-              type="submit" 
-              className="w-full py-3 mt-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-6 py-12">
+      <div className="w-full max-w-md">
+        <div className="bg-white px-8 py-10 shadow-md rounded-lg">
+          <h2 className="mb-8 text-center text-3xl font-bold tracking-tight text-gray-900">
+            Create your account
+          </h2>
+
+          {/* Error Messages */}
+          {(error || formError) && (
+            <div className="mb-4 p-3 text-sm text-red-500 bg-red-50 rounded-md">
+              {formError || error}
+            </div>
+          )}
+
+          {/* Sign Up Form */}
+          <form onSubmit={handleEmailSignUp} className="space-y-6">
+            <div>
+              <label 
+                htmlFor="displayName" 
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <input
+                id="displayName"
+                name="displayName"
+                type="text"
+                required
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+                value={formData.displayName}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label 
+                htmlFor="email" 
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+                value={formData.email}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label 
+                htmlFor="password" 
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+                value={formData.password}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label 
+                htmlFor="confirmPassword" 
+                className="block text-sm font-medium text-gray-700"
+              >
+                Confirm Password
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                required
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-green-500 focus:outline-none focus:ring-green-500"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-green-600 hover:bg-green-700"
             >
-              Sign Up
+              {loading ? "Creating account..." : "Sign up"}
             </Button>
           </form>
 
-          <div className="flex items-center justify-center my-4">
-            <div className="w-1/3 border-t border-gray-300"></div>
-            <p className="px-2 text-gray-500 text-sm">OR</p>
-            <div className="w-1/3 border-t border-gray-300"></div>
+          {/* Divider */}
+          <div className="mt-6 flex items-center justify-center">
+            <div className="border-t flex-grow border-gray-300"></div>
+            <span className="mx-4 text-sm text-gray-500">or</span>
+            <div className="border-t flex-grow border-gray-300"></div>
           </div>
 
-          <Button 
-            type="button"
-            variant="outline" 
-            onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center py-3 border-gray-300 rounded-lg"
+          {/* Google Sign Up Button */}
+          <button
+            onClick={handleGoogleSignUp}
+            disabled={loading}
+            className="mt-6 w-full flex items-center justify-center gap-3 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
-            <FcGoogle className="mr-2 text-xl" /> Continue with Google
-          </Button>
+            <FcGoogle className="h-5 w-5" />
+            <span>Continue with Google</span>
+          </button>
 
-          <p className="text-center text-gray-600 mt-4">
-            Already have an account?
-            <span
-              onClick={() => router.push("/login")}
-              className="text-green-600 cursor-pointer font-medium ml-1 hover:underline"
+          {/* Sign In Link */}
+          <p className="mt-6 text-center text-sm text-gray-600">
+            Already have an account?{" "}
+            <Link
+              href="/signin"
+              className="font-medium text-green-600 hover:text-green-500"
             >
-              Sign In
-            </span>
+              Sign in
+            </Link>
           </p>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

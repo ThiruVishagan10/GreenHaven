@@ -1,143 +1,164 @@
-// lib/context/FavoritesProvider.tsx
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove, setDoc } from 'firebase/firestore';
-import { db } from '../../../firebase';
-import { UserAuth } from './AuthContent'; // Update this import to use UserAuth
+"use client";
 
-import { FavoritesContextType } from '../../types/product';
+import { createContext, useContext, useEffect, useState } from "react";
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc 
+} from "firebase/firestore";
+import { db } from "../../../firebase";
+import { UserAuth } from "../context/AuthContent";
 
-interface FavoritesProviderProps {
-  children: React.ReactNode;
+interface FavoriteItem {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
 }
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+interface FavoriteContextType {
+  favorites: Set<string>; // Changed to Set of IDs for easier checking
+  favoriteItems: FavoriteItem[]; // Full items array
+  addToFavorites: (item: FavoriteItem) => Promise<void>;
+  removeFromFavorites: (itemId: string) => Promise<void>;
+  isFavorite: (itemId: string) => boolean;
+  getFavoriteCount: () => number;
+  loading: boolean;
+  error: string | null;
+}
 
-// Firebase service functions
-const getFavorites = async (userId: string): Promise<string[]> => {
-  try {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (userDoc.exists()) {
-      return userDoc.data().favorites || [];
-    }
-    await setDoc(doc(db, 'users', userId), { 
-      favorites: [],
-      updatedAt: new Date().toISOString()
-    });
-    return [];
-  } catch (error) {
-    console.error('Error getting favorites:', error);
-    return [];
-  }
-};
+const FavoriteContext = createContext<FavoriteContextType>({
+  favorites: new Set(),
+  favoriteItems: [],
+  addToFavorites: async () => {},
+  removeFromFavorites: async () => {},
+  isFavorite: () => false,
+  getFavoriteCount: () => 0,
+  loading: false,
+  error: null,
+});
 
-const addToFavorites = async (userId: string, productId: string): Promise<boolean> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      favorites: arrayUnion(productId),
-      updatedAt: new Date().toISOString()
-    });
-    return true;
-  } catch (error) {
-    console.error('Error adding to favorites:', error);
-    return false;
-  }
-};
-
-const removeFromFavorites = async (userId: string, productId: string): Promise<boolean> => {
-  try {
-    const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, {
-      favorites: arrayRemove(productId),
-      updatedAt: new Date().toISOString()
-    });
-    return true;
-  } catch (error) {
-    console.error('Error removing from favorites:', error);
-    return false;
-  }
-};
-
-export const FavoritesProvider: React.FC<FavoritesProviderProps> = ({ children }) => {
+export const FavoriteProvider = ({ children }: { children: React.ReactNode }) => {
+  const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [isLoading, setIsLoading] = useState(true);
-  const { user } = UserAuth(); // Use UserAuth here
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = UserAuth();
 
-  useEffect(() => {
-    const loadFavorites = async () => {
-      if (user?.uid) {
-        setIsLoading(true);
-        try {
-          const userFavorites = await getFavorites(user.uid);
-          setFavorites(new Set(userFavorites));
-        } catch (error) {
-          console.error('Error loading favorites:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
-        setFavorites(new Set());
-        setIsLoading(false);
-      }
-    };
+  // Get favorites count
+  const getFavoriteCount = () => {
+    return favorites.size;
+  };
 
-    loadFavorites();
-  }, [user]);
+  // Check if item is in favorites
+  const isFavorite = (itemId: string) => {
+    return favorites.has(itemId);
+  };
 
-  const toggleFavorite = async (productId: string) => {
-    if (!user?.uid) {
-      console.error('User not logged in');
+  // Fetch favorites from Firestore
+  const fetchFavorites = async () => {
+    if (!user) {
+      setFavoriteItems([]);
+      setFavorites(new Set());
       return;
     }
 
-    const isFav = favorites.has(productId);
-    const newFavorites = new Set(favorites);
-
+    setLoading(true);
     try {
-      if (isFav) {
-        const success = await removeFromFavorites(user.uid, productId);
-        if (success) {
-          newFavorites.delete(productId);
-          setFavorites(newFavorites);
-        }
+      const favRef = doc(db, "favorites", user.uid);
+      const favSnap = await getDoc(favRef);
+
+      if (favSnap.exists()) {
+        const items = favSnap.data().items || [];
+        setFavoriteItems(items);
+        setFavorites(new Set(items.map((item: FavoriteItem) => item.id)));
       } else {
-        const success = await addToFavorites(user.uid, productId);
-        if (success) {
-          newFavorites.add(productId);
-          setFavorites(newFavorites);
-        }
+        await setDoc(favRef, { items: [] });
+        setFavoriteItems([]);
+        setFavorites(new Set());
       }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
+    } catch (err) {
+      setError("Failed to fetch favorites");
+      console.error("Error fetching favorites:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isFavorite = (productId: string) => favorites.has(productId);
+  // Add to favorites
+  const addToFavorites = async (item: FavoriteItem) => {
+    if (!user) {
+      setError("Please sign in to add favorites");
+      return;
+    }
 
-  const getFavoriteCount = () => favorites.size;
-
-  const value = {
-    favorites,
-    isLoading,
-    toggleFavorite,
-    isFavorite,
-    getFavoriteCount
+    setLoading(true);
+    try {
+      const favRef = doc(db, "favorites", user.uid);
+      if (!favorites.has(item.id)) {
+        const newFavoriteItems = [...favoriteItems, item];
+        await updateDoc(favRef, { items: newFavoriteItems });
+        setFavoriteItems(newFavoriteItems);
+        setFavorites(new Set([...favorites, item.id]));
+      }
+    } catch (err) {
+      setError("Failed to add to favorites");
+      console.error("Error adding to favorites:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Remove from favorites
+  const removeFromFavorites = async (itemId: string) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const favRef = doc(db, "favorites", user.uid);
+      const updatedItems = favoriteItems.filter(item => item.id !== itemId);
+      await updateDoc(favRef, { items: updatedItems });
+      setFavoriteItems(updatedItems);
+      const newFavorites = new Set(favorites);
+      newFavorites.delete(itemId);
+      setFavorites(newFavorites);
+    } catch (err) {
+      setError("Failed to remove from favorites");
+      console.error("Error removing from favorites:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch favorites when user changes
+  useEffect(() => {
+    fetchFavorites();
+  }, [user]);
+
   return (
-    <FavoritesContext.Provider value={value}>
+    <FavoriteContext.Provider
+      value={{
+        favorites,
+        favoriteItems,
+        addToFavorites,
+        removeFromFavorites,
+        isFavorite,
+        getFavoriteCount,
+        loading,
+        error,
+      }}
+    >
       {children}
-    </FavoritesContext.Provider>
+    </FavoriteContext.Provider>
   );
 };
 
 export const useFavorites = () => {
-  const context = useContext(FavoritesContext);
-  if (context === undefined) {
-    throw new Error('useFavorites must be used within a FavoritesProvider');
+  const context = useContext(FavoriteContext);
+  if (!context) {
+    throw new Error('useFavorites must be used within a FavoriteProvider');
   }
   return context;
 };
-
-export { FavoritesContext };

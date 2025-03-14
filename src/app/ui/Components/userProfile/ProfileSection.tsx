@@ -1,187 +1,434 @@
+
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useUser } from '@/lib/context/UserContext';
-import AddressesSection from './AddressesSection';
-import { User, Edit2, PlusCircle, Home, Loader2 } from 'lucide-react';
-import { getDefaultAddress, type Address } from '@/services/address';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Calendar, 
+  Edit2, 
+  Loader2,
+  Camera
+} from 'lucide-react';
+import { UserAuth } from '@/lib/context/AuthContent';
+import { 
+  doc, 
+  updateDoc,
+  getDoc 
+} from 'firebase/firestore';
+import { db } from '../../../../../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-const ProfileSection = () => {
-  const { user } = useUser();
-  const [defaultAddress, setDefaultAddress] = useState<Address | null>(null);
+interface UserProfile {
+  displayName: string;
+  email: string;
+  phoneNumber: string;
+  photoURL: string;
+  dateJoined: string;
+  addresses?: {
+    id: string;
+    name: string;
+    street: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    phone: string;
+    isDefault: boolean;
+  }[];
+}
+
+
+export default function ProfileSection() {
+  const router = useRouter();
+  const { user, loading: authLoading } = UserAuth();
+  
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    phoneNumber: '',
+    address: ''
+  });
 
-  // Fetch default address when component mounts
   useEffect(() => {
-    const fetchDefaultAddress = async () => {
-      if (!user?.uid) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
 
+    const fetchUserProfile = async () => {
       try {
         setIsLoading(true);
-        const address = await getDefaultAddress(user.uid);
-        setDefaultAddress(address);
-      } catch (err) {
-        console.error('Error fetching default address:', err);
-        setError('Failed to load default address');
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as UserProfile;
+          setProfile(userData);
+          setEditForm({
+            displayName: userData.displayName || '',
+            phoneNumber: userData.phoneNumber || '',
+            address: userData.addresses?.find(addr => addr.isDefault)?.street || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchDefaultAddress();
-  }, [user]);
+    fetchUserProfile();
+  }, [user, router]);
 
-  if (!user) {
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Reset form when canceling edit
+      setEditForm({
+        displayName: profile?.displayName || '',
+        phoneNumber: profile?.phoneNumber || '',
+        address: profile?.addresses?.find(addr => addr.isDefault)?.street || ''
+      });
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    try {
+      setIsSaving(true);
+      const userRef = doc(db, 'users', user.uid);
+      
+      await updateDoc(userRef, {
+        ...editForm,
+        updatedAt: new Date().toISOString()
+      });
+
+      setProfile(prev => ({
+        ...prev!,
+        ...editForm
+      }));
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  async function uploadImage(file: File): Promise<string> {
+    if (!file) {
+      throw new Error('No file provided');
+    }
+  
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'my-uploads'); // Changed to match your working preset name
+    formData.append('cloud_name', 'djvma8ajq');
+  
+    try {
+      const response = await fetch('https://api.cloudinary.com/v1_1/djvma8ajq/image/upload', {
+        method: 'POST',
+        body: formData,
+        // Add headers to handle CORS
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+  
+      // Log the raw response for debugging
+      console.log('Raw Response:', response);
+  
+      // Check if the response is ok
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Upload failed with status:', response.status);
+        console.error('Error response:', errorData);
+        throw new Error(`Upload failed: ${response.status} ${errorData}`);
+      }
+  
+      const data = await response.json();
+      console.log('Upload response data:', data);
+  
+      if (!data.secure_url) {
+        throw new Error('No secure URL in response');
+      }
+  
+      return data.secure_url;
+    } catch (error) {
+      console.error('Detailed upload error:', error);
+      throw error;
+    }
+  }
+  
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !e.target.files || !e.target.files[0]) return;
+  
+    try {
+      setIsUploadingImage(true);
+      const file = e.target.files[0];
+      
+      // Log file details for debugging
+      console.log('File details:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+  
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
+      }
+  
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        alert('Image size should be less than 5MB');
+        return;
+      }
+  
+      // Upload to Cloudinary
+      const photoURL = await uploadImage(file);
+      console.log('Upload successful, URL:', photoURL);
+  
+      if (!photoURL) {
+        throw new Error('No URL returned from upload');
+      }
+  
+      // Update user profile in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { 
+        photoURL,
+        updatedAt: new Date().toISOString()
+      });
+  
+      setProfile(prev => ({
+        ...prev!,
+        photoURL
+      }));
+  
+      alert('Profile picture updated');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update profile picture');
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+  
+
+  const getDefaultAddress = (profile: UserProfile) => {
+    if (!profile.addresses || profile.addresses.length === 0) {
+      return null;
+    }
+    
+    const defaultAddress = profile.addresses.find(addr => addr.isDefault);
+    return defaultAddress || profile.addresses[0]; // Fallback to first address if no default
+  };
+
+
+  if (authLoading || isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <p className="text-gray-500">Please login to view your profile.</p>
+        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
       </div>
     );
   }
 
-  const handleDefaultAddressChange = (address: Address | null) => {
-    setDefaultAddress(address);
-  };
+  if (!user || !profile) {
+    return null;
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">My Account</h1>
-      
-      <div className="space-y-8">
-        {/* Profile Information */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <div className="space-y-6">
-            {/* User Info Section */}
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {user.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.fullName || 'Profile'}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="w-8 h-8 text-gray-400" />
-                )}
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {user.fullName || 'User'}
-                </h2>
-                <p className="text-gray-600">{user.email}</p>
-              </div>
-            </div>
-
-            {/* Default Address Section */}
-            <div className="border-t pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Home className="w-5 h-5" />
-                Default Shipping Address
-              </h3>
-              {isLoading ? (
-                <div className="flex justify-center items-center py-4">
-                  <Loader2 className="w-6 h-6 animate-spin text-green-600" />
-                </div>
-              ) : error ? (
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-                  {error}
-                </div>
-              ) : defaultAddress ? (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="font-medium text-gray-900">{defaultAddress.street}</p>
-                  <p className="text-gray-600">
-                    {defaultAddress.city}, {defaultAddress.state} {defaultAddress.postalCode}
-                  </p>
-                  <p className="text-gray-600">{defaultAddress.country}</p>
-                </div>
-              ) : (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-gray-500">No default address set</p>
-                </div>
-              )}
-            </div>
-
-            {/* User Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Name</label>
-                <p className="mt-1 text-gray-900">{user.displayName || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <p className="mt-1 text-gray-900">{user.email}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Phone Number</label>
-                <p className="mt-1 text-gray-900">{user.phoneNumber || 'Not set'}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Account Created</label>
-                <p className="mt-1 text-gray-900">
-                  {user.metadata?.creationTime 
-                    ? new Date(user.metadata.creationTime).toLocaleDateString() 
-                    : 'Not available'}
-                </p>
-              </div>
-            </div>
-          </div>
+    <div className="max-w-3xl mx-auto p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="flex justify-between items-start mb-6">
+          <h2 className="text-2xl font-bold">Profile Information</h2>
+          <button
+            onClick={handleEditToggle}
+            disabled={isSaving}
+            className="flex items-center gap-2 text-green-600 hover:text-green-700"
+          >
+            <Edit2 className="h-4 w-4" />
+            {isEditing ? 'Cancel' : 'Edit'}
+          </button>
         </div>
 
-        {/* Addresses Section
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Manage Addresses</h2>
-          <AddressesSection onDefaultAddressChange={handleDefaultAddressChange} />
-        </div> */}
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Profile Image Section */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative">
+              <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100">
+                {profile.photoURL ? (
+                  <Image
+                    src={profile.photoURL}
+                    alt={profile.displayName}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="h-16 w-16 text-gray-400" />
+                  </div>
+                )}
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+              <label className="absolute bottom-0 right-0 p-2 bg-green-600 rounded-full text-white cursor-pointer hover:bg-green-700 transition-colors">
+                <Camera className="h-4 w-4" />
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isUploadingImage}
+                />
+              </label>
+            </div>
+            <p className="text-sm text-gray-500">
+              Click the camera icon to update your profile picture
+            </p>
+          </div>
 
-        {/* Settings Section */}
-        <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h2 className="text-2xl font-semibold text-gray-900 mb-6">Account Settings</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 border-b">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Email Notifications</h3>
-                <p className="text-sm text-gray-500">Receive email updates about your account</p>
-              </div>
-              <div className="flex items-center">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                </label>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between py-3 border-b">
-              <div>
-                <h3 className="text-sm font-medium text-gray-900">Two-Factor Authentication</h3>
-                <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-              </div>
-              <button className="px-4 py-2 text-sm font-medium text-green-600 border border-green-600 rounded-md hover:bg-green-50">
-                Setup 2FA
-              </button>
-            </div>
+          {/* Profile Details Section */}
+          <div className="flex-1">
+            {isEditing ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    name="displayName"
+                    value={editForm.displayName}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    required
+                  />
+                </div>
 
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <h3 className="text-sm font-medium text-red-600">Delete Account</h3>
-                <p className="text-sm text-gray-500">Permanently delete your account and all data</p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    name="phoneNumber"
+                    value={editForm.phoneNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    name="address"
+                    value={editForm.address}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition-colors disabled:bg-green-400"
+                >
+                  {isSaving ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </div>
+                  ) : (
+                    'Save Changes'
+                  )}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <User className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Full Name</p>
+                    <p className="font-medium">{profile.displayName}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Mail className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Email</p>
+                    <p className="font-medium">{profile.email}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Phone className="h-5 w-5 text-green-600" />
+                  <div>
+                    <p className="text-sm text-gray-500">Phone Number</p>
+                    <p className="font-medium">
+                      {profile.phoneNumber || 'Not provided'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+  <MapPin className="h-5 w-5 text-green-600" />
+  <div>
+    <p className="text-sm text-gray-500">Default Address</p>
+    {(() => {
+      const defaultAddress = getDefaultAddress(profile);
+      if (!defaultAddress) {
+        return <p className="font-medium">Not provided</p>;
+      }
+      return (
+        <div>
+          <p className="font-medium">{defaultAddress.name}</p>
+          <p className="text-sm text-gray-600">
+            {defaultAddress.street}, {defaultAddress.city},
+          </p>
+          <p className="text-sm text-gray-600">
+            {defaultAddress.state} {defaultAddress.postalCode}
+          </p>
+          <p className="text-sm text-gray-600">{defaultAddress.phone}</p>
+        </div>
+      );
+    })()}
+  </div>
+</div>
+
+
+
               </div>
-              <button 
-                className="px-4 py-2 text-sm font-medium text-red-600 border border-red-600 rounded-md hover:bg-red-50"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                    // Handle account deletion
-                  }
-                }}
-              >
-                Delete Account
-              </button>
-            </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-};
-
-export default ProfileSection;
+}
