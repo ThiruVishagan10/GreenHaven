@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -5,15 +6,14 @@ import { UserAuth } from '@/lib/context/AuthContent';
 import { auth, db } from '../../../firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { 
   User, 
   LogOut, 
   UserCircle, 
   ShoppingBag, 
   Heart, 
-  MapPin, 
-  Settings,
+  MapPin,
   ChevronRight,
   Loader2
 } from 'lucide-react';
@@ -21,7 +21,6 @@ import ProfileSection from '../ui/Components/userProfile/ProfileSection';
 import OrdersSection from '../ui/Components/userProfile/OrderSection';
 import FavoritesSection from '../ui/Components/userProfile/FavoritesSection';
 import AddressesSection from '../ui/Components/userProfile/AddressesSection';
-import SettingsSection from '../ui/Components/userProfile/SettingsSection';
 
 interface UserProfile {
   displayName: string;
@@ -72,21 +71,20 @@ const ProfilePage = () => {
     fetchProfile();
   }, [user, router]);
 
-  const getUserDisplayImage = () => {
-    if (!profile) return <UserCircle size={96} className="w-24 h-24 text-gray-400" />;
-    
-    if (profile.photoURL) {
-      return (
-        <img
-          src={profile.photoURL}
-          alt="Profile"
-          className="w-24 h-24 rounded-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-      );
+  const handleUpdateProfile = async (data: { displayName: string; phoneNumber: string }) => {
+    if (!user) return;
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...data,
+        updatedAt: new Date().toISOString()
+      });
+      
+      setProfile(prev => prev ? { ...prev, ...data } : null);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw new Error('Failed to update profile');
     }
-    
-    return <UserCircle size={96} className="w-24 h-24 text-gray-400" />;
   };
 
   const handleLogout = async () => {
@@ -117,23 +115,37 @@ const ProfilePage = () => {
     { id: 'orders', label: 'Orders', icon: <ShoppingBag size={20} /> },
     { id: 'favorites', label: 'Favorites', icon: <Heart size={20} /> },
     { id: 'addresses', label: 'Addresses', icon: <MapPin size={20} /> },
-    { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
       case 'profile':
-        return <ProfileSection />;
+        return (
+          <ProfileSection 
+            displayName={profile?.displayName || null}
+            email={profile?.email || null}
+            photoURL={profile?.photoURL || null}
+            phoneNumber={profile?.phoneNumber || null}
+             addresses={profile?.addresses || []}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        );
       case 'orders':
         return <OrdersSection />;
       case 'favorites':
         return <FavoritesSection />;
       case 'addresses':
         return <AddressesSection />;
-      case 'settings':
-        return <SettingsSection />;
       default:
-        return <ProfileSection />;
+        return (
+          <ProfileSection 
+            displayName={profile?.displayName || null}
+            email={profile?.email || null}
+            photoURL={profile?.photoURL || null}
+            phoneNumber={profile?.phoneNumber || null}
+            onUpdateProfile={handleUpdateProfile}
+          />
+        );
     }
   };
 
@@ -142,43 +154,59 @@ const ProfilePage = () => {
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row gap-6">
           {/* Sidebar */}
-          <div className="w-full md:w-1/4">
-            <div className="bg-white rounded-lg shadow p-6">
+          <div className="w-full md:w-80">
+            <div className="bg-white rounded-lg shadow-sm">
               {/* User Info */}
-              <div className="flex flex-col items-center mb-6 pb-6 border-b">
-                {getUserDisplayImage()}
-                <h2 className="mt-4 text-xl font-semibold">
+              <div className="flex flex-col items-center p-6 border-b">
+                <div className="relative">
+                  {profile?.photoURL ? (
+                    <img
+                      src={profile.photoURL}
+                      alt="Profile"
+                      className="w-24 h-24 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <UserCircle size={96} className="w-24 h-24 text-gray-400" />
+                  )}
+                </div>
+                <h2 className="mt-4 text-lg font-semibold text-gray-900">
                   {profile?.displayName || 'No name set'}
                 </h2>
-                <p className="text-gray-600">{profile?.email}</p>
+                <p className="text-sm text-gray-500">{profile?.email}</p>
               </div>
 
               {/* Navigation */}
-              <nav className="space-y-2">
+              <nav className="p-2">
                 {sidebarItems.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
-                      activeTab === item.id
+                    className={`w-full flex items-center justify-between p-3 rounded-md transition-colors
+                      ${activeTab === item.id
                         ? 'bg-green-50 text-green-600'
-                        : 'hover:bg-gray-50'
-                    }`}
+                        : 'hover:bg-gray-50 text-gray-700'
+                      }`}
                   >
                     <div className="flex items-center gap-3">
-                      {item.icon}
-                      <span>{item.label}</span>
+                      {React.cloneElement(item.icon, {
+                        className: activeTab === item.id ? 'text-green-600' : 'text-gray-500'
+                      })}
+                      <span className="text-sm font-medium">{item.label}</span>
                     </div>
-                    <ChevronRight size={20} className="text-gray-400" />
+                    <ChevronRight 
+                      size={18} 
+                      className={activeTab === item.id ? 'text-green-600' : 'text-gray-400'} 
+                    />
                   </button>
                 ))}
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 p-3 text-red-600 hover:bg-red-50 rounded-md transition-colors mt-2"
                 >
                   <LogOut size={20} />
-                  <span>Logout</span>
+                  <span className="text-sm font-medium">Logout</span>
                 </button>
               </nav>
             </div>
@@ -186,7 +214,7 @@ const ProfilePage = () => {
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
               {renderContent()}
             </div>
           </div>
