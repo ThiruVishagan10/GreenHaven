@@ -1,16 +1,15 @@
-// components/ProductListComponent.tsx
 
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { CircularProgress } from "@nextui-org/react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, X, Heart } from "lucide-react";
+import { motion } from "framer-motion";
+import { Search, Filter, X, Heart, Loader2  } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../../../firebase";
-import { useFavorites } from "@/lib/context/FavoritesContext";
 import { UserAuth } from "../../../../lib/context/AuthContent";
+import { useFavorites } from "../../../../lib/context/FavoritesContext";
 import Image from "next/image";
 
 // Types
@@ -32,12 +31,7 @@ interface ProductListProps {
   className?: string;
 }
 
-interface SortOption {
-  value: string;
-  label: string;
-}
-
-const SORT_OPTIONS: SortOption[] = [
+const SORT_OPTIONS = [
   { value: "featured", label: "Featured" },
   { value: "price-low-high", label: "Price: Low to High" },
   { value: "price-high-low", label: "Price: High to Low" },
@@ -54,9 +48,9 @@ export default function ProductListComponent({
 }: ProductListProps) {
   const router = useRouter();
   const { user } = UserAuth();
-  const { favorites, toggleFavorite } = useFavorites();
+  const { addToFavorites, removeFromFavorites, isFavorite, loading: favoriteLoading } = useFavorites();
 
-  // State
+  // States
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -78,10 +72,7 @@ export default function ProductListComponent({
         
         const fetchedProducts: Product[] = [];
         querySnapshot.forEach((doc) => {
-          fetchedProducts.push({ 
-            id: doc.id, 
-            ...doc.data() 
-          } as Product);
+          fetchedProducts.push({ id: doc.id, ...doc.data() } as Product);
         });
 
         setProducts(fetchedProducts);
@@ -96,23 +87,30 @@ export default function ProductListComponent({
     fetchProducts();
   }, [category]);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, priceRange, sortOption]);
-
-  // Event Handlers
+  // Handlers
   const handleProductClick = (productId: string) => {
     router.push(`/product/${productId}`);
   };
 
-  const handleFavoriteClick = async (e: React.MouseEvent, productId: string) => {
+  const handleFavoriteToggle = async (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     if (!user) {
       router.push('/login');
       return;
     }
-    await toggleFavorite(productId);
+
+    const favoriteItem = {
+      id: product.id,
+      name: product.name,
+      price: parseFloat(product.offeredPrice),
+      image: product.mainImage
+    };
+
+    if (isFavorite(product.id)) {
+      await removeFromFavorites(product.id);
+    } else {
+      await addToFavorites(favoriteItem);
+    }
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,10 +121,6 @@ export default function ProductListComponent({
     if (e.key === 'Enter') {
       setSearchQuery((e.target as HTMLInputElement).value);
     }
-  };
-
-  const handleSearchSubmit = () => {
-    setSearchQuery(inputValue);
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -151,7 +145,7 @@ export default function ProductListComponent({
       productName.includes(term) || productDescription.includes(term)
     );
     
-    const matchesPrice = parseFloat(product.price) <= priceRange;
+    const matchesPrice = parseFloat(product.offeredPrice) <= priceRange;
     
     return matchesSearch && matchesPrice;
   });
@@ -159,9 +153,9 @@ export default function ProductListComponent({
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     switch (sortOption) {
       case "price-low-high":
-        return parseFloat(a.price) - parseFloat(b.price);
+        return parseFloat(a.offeredPrice) - parseFloat(b.offeredPrice);
       case "price-high-low":
-        return parseFloat(b.price) - parseFloat(a.price);
+        return parseFloat(b.offeredPrice) - parseFloat(a.offeredPrice);
       case "name-a-z":
         return a.name.localeCompare(b.name);
       case "name-z-a":
@@ -179,50 +173,6 @@ export default function ProductListComponent({
     currentPage * itemsPerPage
   );
 
-  // Product Card Component
-  const ProductCard = ({ product }: { product: Product }) => (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="relative aspect-square">
-        <Image
-          src={product.mainImage}
-          alt={product.name}
-          fill
-          className="object-cover"
-        />
-        <button
-          onClick={(e) => handleFavoriteClick(e, product.id)}
-          className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200"
-        >
-          <Heart
-            size={20}
-            className={`transition-colors ${
-              favorites.has(product.id)
-                ? "fill-red-500 text-red-500"
-                : "fill-none text-gray-500"
-            }`}
-          />
-        </button>
-      </div>
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-        <p className="text-gray-600 text-sm mb-2 line-clamp-2">
-          {product.description}
-        </p>
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-gray-400 line-through text-sm">
-              ₹{product.price}
-            </span>
-            <span className="text-green-600 font-bold ml-2">
-              ₹{product.offeredPrice}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Loading State
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -231,7 +181,6 @@ export default function ProductListComponent({
     );
   }
 
-  // Error State
   if (error) {
     return (
       <div className="text-red-500 text-center py-4">
@@ -255,10 +204,8 @@ export default function ProductListComponent({
       {/* Mobile Filters */}
       {isMobileFiltersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50" 
-            onClick={() => setIsMobileFiltersOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50" 
+               onClick={() => setIsMobileFiltersOpen(false)} />
           <div className="fixed right-0 top-0 h-full w-[300px] bg-white p-6 overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold">Filters & Sort</h3>
@@ -269,9 +216,9 @@ export default function ProductListComponent({
                 <X size={24} />
               </button>
             </div>
-            {/* Mobile Filters Content */}
+            
+            {/* Mobile Filter Controls */}
             <div className="space-y-4">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -284,7 +231,6 @@ export default function ProductListComponent({
                 />
               </div>
 
-              {/* Sort */}
               <div>
                 <label className="block text-sm font-medium mb-2">Sort By</label>
                 <select
@@ -300,20 +246,26 @@ export default function ProductListComponent({
                 </select>
               </div>
 
-              {/* Price Range */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Price Range: ₹{priceRange}
                 </label>
                 <input
                   type="range"
-                  min="100"
-                  max="1000"
+                  min="0"
+                  max="10000"
                   value={priceRange}
                   onChange={(e) => setPriceRange(Number(e.target.value))}
                   className="w-full"
                 />
               </div>
+
+              <button
+                onClick={resetFilters}
+                className="w-full py-2 text-green-600 hover:text-green-700"
+              >
+                Reset Filters
+              </button>
             </div>
           </div>
         </div>
@@ -325,9 +277,9 @@ export default function ProductListComponent({
           <aside className="hidden lg:block w-64">
             <div className="sticky top-4 space-y-4">
               <h3 className="text-lg font-bold mb-4">Filters & Sort</h3>
-              {/* Desktop Filters Content */}
+              
+              {/* Desktop Filter Controls */}
               <div className="space-y-4">
-                {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                   <input
@@ -340,7 +292,6 @@ export default function ProductListComponent({
                   />
                 </div>
 
-                {/* Sort */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Sort By</label>
                   <select
@@ -356,20 +307,26 @@ export default function ProductListComponent({
                   </select>
                 </div>
 
-                {/* Price Range */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     Price Range: ₹{priceRange}
                   </label>
                   <input
                     type="range"
-                    min="100"
-                    max="1000"
+                    min="0"
+                    max="10000"
                     value={priceRange}
                     onChange={(e) => setPriceRange(Number(e.target.value))}
                     className="w-full"
                   />
                 </div>
+
+                <button
+                  onClick={resetFilters}
+                  className="w-full py-2 text-green-600 hover:text-green-700"
+                >
+                  Reset Filters
+                </button>
               </div>
             </div>
           </aside>
@@ -377,7 +334,7 @@ export default function ProductListComponent({
           {/* Main Content */}
           <main className="flex-1">
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold">{category}</h1>
+              <h1 className="text-2xl font-bold capitalize">{category}</h1>
               <span className="text-sm text-gray-500">
                 {sortedProducts.length} products
               </span>
@@ -390,8 +347,54 @@ export default function ProductListComponent({
                   key={product.id}
                   whileHover={{ scale: 1.02 }}
                   onClick={() => handleProductClick(product.id)}
+                  className="cursor-pointer"
                 >
-                  <ProductCard product={product} />
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div className="relative aspect-square">
+                      <Image
+                        src={product.mainImage}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+  onClick={(e) => handleFavoriteToggle(e, product)}
+  className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200 z-10"
+  disabled={favoriteLoading}
+>
+  {favoriteLoading ? (
+    <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+  ) : (
+    <Heart
+      size={20}
+      className={`transition-colors ${
+        isFavorite(product.id)
+          ? "fill-red-500 text-red-500"
+          : "fill-none text-gray-500"
+      }`}
+    />
+  )}
+</button>
+
+
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                      <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                        {product.description}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="text-gray-400 line-through text-sm">
+                            ₹{product.price}
+                          </span>
+                          <span className="text-green-600 font-bold ml-2">
+                            ₹{product.offeredPrice}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>

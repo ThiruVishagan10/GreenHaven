@@ -94,9 +94,9 @@ export default function ProductForm() {
             file: new File([], '') // Empty file indicates existing image
           })));
         }
-        // if (res.specialOffers) {
-        //   setSpecialOffers(res.specialOffers);
-        // }
+        if (res.specialOffers) {
+          setSpecialOffers(res.specialOffers);
+        }
       }
     } catch (error) {
       alert(error);

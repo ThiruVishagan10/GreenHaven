@@ -1,22 +1,12 @@
 // lib/firestore/product/read_server.ts
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../../firebase";
+import { Product } from "@/types/product";
 
 interface GetProductParams {
     id: string;
 }
 
-interface Product {
-    id: string;
-    name: string;
-    category: string;
-    price: string;
-    description: string;
-    mainImage?: string;
-    additionalImages?: string[];
-    createdAt?: string;
-    updatedAt?: string;
-}
 
 export const getProduct = async ({ id }: GetProductParams): Promise<Product | null> => {
     try {

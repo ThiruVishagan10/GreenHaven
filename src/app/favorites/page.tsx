@@ -7,7 +7,6 @@ import { db } from '../../../firebase';
 import { UserAuth } from '@/lib/context/AuthContent';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Heart, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,10 +21,17 @@ interface Product {
 }
 
 export default function FavoritesPage() {
-  const { favorites, toggleFavorite, isLoading: favoritesLoading } = useFavorites();
+  const { 
+    addToFavorites, 
+    removeFromFavorites, 
+    isFavorite, 
+    loading: favoriteLoading 
+  } = useFavorites();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
   const { user } = UserAuth();
   const router = useRouter();
 
@@ -36,43 +42,57 @@ export default function FavoritesPage() {
     }
 
     const fetchFavoriteProducts = async () => {
-      if (favoritesLoading) return;
+      if (favoriteLoading) return;
       
       try {
         setIsLoading(true);
-        const favoriteIds = Array.from(favorites);
-        
-        if (favoriteIds.length === 0) {
-          setProducts([]);
-          setIsLoading(false);
-          return;
-        }
-
         const productsRef = collection(db, 'products');
-        const q = query(productsRef, where('id', 'in', favoriteIds));
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(productsRef);
         
-        const favoriteProducts: Product[] = [];
+        const allProducts: Product[] = [];
         querySnapshot.forEach((doc) => {
-          favoriteProducts.push({ id: doc.id, ...doc.data() } as Product);
+          if (isFavorite(doc.id)) {
+            allProducts.push({ id: doc.id, ...doc.data() } as Product);
+          }
         });
 
-        setProducts(favoriteProducts);
+        setProducts(allProducts);
       } catch (error) {
         console.error('Error fetching favorite products:', error);
+        setError('Failed to fetch favorite products');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchFavoriteProducts();
-  }, [favorites, favoritesLoading, user, router]);
+  }, [user, router, favoriteLoading, isFavorite]);
 
-  const handleToggleFavorite = async (e: React.MouseEvent, productId: string) => {
-    e.preventDefault(); // Prevent navigation when clicking the heart icon
-    setRemovingId(productId);
-    await toggleFavorite(productId);
-    setRemovingId(null);
+  const handleFavoriteClick = async (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setActionLoading(prev => ({ ...prev, [productId]: true }));
+
+      if (isFavorite(productId)) {
+        await removeFromFavorites(productId);
+        // Remove product from local state
+        setProducts(prev => prev.filter(p => p.id !== productId));
+      } else {
+        await addToFavorites(productId);
+      }
+    } catch (error) {
+      console.error('Error updating favorite status:', error);
+      setError('Failed to update favorite status');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [productId]: false }));
+    }
   };
 
   const handleProductClick = (productId: string) => {
@@ -83,7 +103,7 @@ export default function FavoritesPage() {
     return null;
   }
 
-  if (isLoading || favoritesLoading) {
+  if (isLoading || favoriteLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-green-500" />
@@ -94,19 +114,27 @@ export default function FavoritesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold mb-6">My Favorites</h1>
+      
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
       {products.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 mb-4">No favorite items yet</p>
-          <Link 
-            href="/product" 
+          <button 
+            onClick={() => router.push('/product')}
             className="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
           >
             Browse Products
-          </Link>
+          </button>
         </div>
       ) : (
         <AnimatePresence mode="popLayout">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Reduced gap and added more columns for larger screens */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {products.map((product) => (
               <motion.div
                 key={product.id}
@@ -115,55 +143,76 @@ export default function FavoritesPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => handleProductClick(product.id)}
               >
-                <div className="relative aspect-square cursor-pointer">
+                {/* Image Container with Fixed Aspect Ratio */}
+                <div className="relative w-full aspect-square bg-gray-100">
                   <Image
                     src={product.mainImage}
                     alt={product.name}
                     fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="object-cover rounded-t-lg"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    priority={false}
                   />
                   <button
-                    onClick={(e) => handleToggleFavorite(e, product.id)}
-                    className="absolute top-2 right-2 p-2 rounded-full bg-white shadow-md hover:bg-gray-100 transition-all duration-200 z-10"
-                    disabled={removingId === product.id}
+                    onClick={(e) => handleFavoriteClick(e, product.id)}
+                    disabled={actionLoading[product.id] || favoriteLoading}
+                    className={`absolute top-2 right-2 p-2 rounded-full 
+                      bg-white/80 backdrop-blur-sm shadow-md 
+                      hover:bg-white transition-all duration-200 z-10
+                      ${(actionLoading[product.id] || favoriteLoading) 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : ''
+                      }`}
+                    aria-label={isFavorite(product.id) ? 'Remove from favorites' : 'Add to favorites'}
                   >
-                    {removingId === product.id ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+                    {actionLoading[product.id] ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
                     ) : (
                       <Heart
-                        size={20}
-                        className={`transition-colors ${
-                          favorites.has(product.id)
-                            ? "fill-red-500 text-red-500"
-                            : "fill-none text-gray-500"
+                        className={`h-4 w-4 transition-colors ${
+                          isFavorite(product.id)
+                            ? 'fill-red-500 text-red-500'
+                            : 'text-gray-600 hover:text-gray-900'
                         }`}
                       />
                     )}
                   </button>
                 </div>
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold mb-2 line-clamp-1">
-                    {product.name}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+
+                {/* Product Info */}
+                <div className="p-3">
+                  <div className="mb-1.5">
+                    <h3 className="text-sm font-medium text-gray-900 line-clamp-1">
+                      {product.name}
+                    </h3>
+                    <p className="text-xs text-gray-500">{product.category}</p>
+                  </div>
+                  
+                  <p className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] mb-2">
                     {product.description}
                   </p>
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="text-gray-400 line-through text-sm">
+
+                  <div className="flex justify-between items-end">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 line-through">
                         ₹{product.price}
                       </span>
-                      <span className="text-green-600 font-bold ml-2">
+                      <span className="text-sm font-semibold text-green-600">
                         ₹{product.offeredPrice}
                       </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {product.category}
-                    </span>
+                    <div className="text-[10px] px-1.5 py-0.5 bg-green-50 rounded text-green-600 font-medium">
+                      {(() => {
+                        const discount = Math.round(
+                          ((parseFloat(product.price) - parseFloat(product.offeredPrice)) / 
+                          parseFloat(product.price)) * 100
+                        );
+                        return `${discount}% OFF`;
+                      })()}
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -173,4 +222,5 @@ export default function FavoritesPage() {
       )}
     </div>
   );
+
 }
