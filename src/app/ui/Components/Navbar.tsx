@@ -27,7 +27,7 @@ const menuItems = [
   { name: "Services", path: "/services" },
   { name: "Buy & Sell", path: "/buy" },
   { name: "About", path: "/about" },
-  { name: "Contact", path: "/contact" },
+  { name: "Contact", path: "/contactus" },
 ];
 import { useCart } from "../../../lib/context/CartContext";
 import { doc, getDoc } from "firebase/firestore";
