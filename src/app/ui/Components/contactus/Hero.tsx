@@ -1,10 +1,67 @@
-"use client";
 
+import ContactForm from "@/components/ContactForm";
 import React from "react";
 import { FaPhone, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
+import nodemailer from "nodemailer";
 import { FaInstagram, FaFacebook, FaPinterest, FaTwitter, FaYoutube } from "react-icons/fa";
+import { FormData } from "@/types/contact";
+import contactSchema from "@/utils/validation/Form-contact";
+import { getErrorMessage } from "@/utils/message.error";
 
 const Hero = () => {
+
+  const sendMail = async (data: FormData) => {
+    'use server'
+
+    try{
+
+      //Validate the data
+      contactSchema.parse(data);
+
+        const transporter = nodemailer.createTransport({
+            service : 'gmail',
+            auth: {
+                user: process.env.SMTP_USERNAME,
+                pass: process.env.SMTP_PASSWORD,
+            },
+        });
+
+        const messageText = `
+        From: ${data.email}
+        Subject: ${data.subject}
+        
+        Message:
+        ${data.message}
+    `;
+
+        const mailOptions = {
+          from: process.env.SMTP_USERNAME, // Use the authenticated email address
+          replyTo: data.email, // Add reply-to field with the contact form email
+          to: process.env.MAIL_RECEIVER_ADDRESS,
+          subject: `Contact Form: ${data.subject}`,
+          text: messageText,
+          html: `
+              <p><strong>From:</strong> ${data.email}</p>
+              <p><strong>Subject:</strong> ${data.subject}</p>
+              <p><strong>Message:</strong></p>
+              <p>${data.message}</p>
+          `,
+      };
+
+        //Send Email
+        await transporter.sendMail(mailOptions);
+        return{
+            success: true,
+            error:null
+        }
+    }catch(error){
+        return{
+            success: false,
+            error: getErrorMessage(error),
+        }
+    }
+}
+
   return (
     <section className="bg-white py-12 px-6 md:px-16 lg:px-24">
       <div className="text-center mb-8">
@@ -17,43 +74,8 @@ const Hero = () => {
       {/* Contact Form and Information Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Contact Form */}
-        <div className="bg-white p-6 shadow-md rounded-lg">
-          <h2 className="text-xl font-semibold mb-4">Send us a message</h2>
-          <form>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium">Name</label>
-              <input type="text" className="w-full p-2 border border-gray-300 rounded-md" />
-            </div>
 
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium">Email</label>
-              <input type="email" className="w-full p-2 border border-gray-300 rounded-md" />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium">Subject</label>
-              <input type="text" className="w-full p-2 border border-gray-300 rounded-md" />
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium">Message</label>
-              <textarea className="w-full p-2 border border-gray-300 rounded-md" rows={4}></textarea>
-            </div>
-
-            {/* File Upload */}
-            <div className="mb-4">
-              <label className="block text-gray-700 font-medium">Attach a file (optional)</label>
-              <input type="file" className="mt-2" />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-black text-white py-2 px-4 rounded-md hover:bg-gray-800 transition"
-            >
-              Send Message
-            </button>
-          </form>
-        </div>
+        <ContactForm sendMail = {sendMail} />
 
         {/* Contact Information */}
         <div className="bg-white p-6 shadow-md rounded-lg">
