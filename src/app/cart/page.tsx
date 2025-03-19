@@ -193,10 +193,80 @@ export default function CartPage() {
                     </button>
                   </div>
                 </div>
+
+                <div className="text-right">
+                    <span className="font-semibold">
+                      ₹{(parseFloat(item.offeredPrice) * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
+         {/* Order Summary */}
+         <div className="lg:col-span-1">
+            <div className="bg-white p-6 rounded-lg shadow-sm sticky top-4">
+              <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Subtotal</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
+                </div>
+  
+                {savings > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Total Savings</span>
+                    <span>-₹{savings.toFixed(2)}</span>
+                  </div>
+                )}
+  
+                <div className="flex justify-between">
+                  <span>Shipping</span>
+                  <span>
+                    {shipping === 0 ? (
+                      <span className="text-green-600">Free</span>
+                    ) : (
+                      `₹${shipping.toFixed(2)}`
+                    )}
+                  </span>
+                </div>
+  
+                {shipping > 0 && (
+                  <div className="text-sm text-gray-600">
+                    <p className="mb-2">
+                      Add ₹{(500 - subtotal).toFixed(2)} more for free shipping
+                    </p>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, (subtotal / 500) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div className="border-t pt-4">
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>₹{total.toFixed(2)}</span>
+                  </div>
+                  {savings > 0 && (
+                    <p className="text-green-600 text-sm mt-2">
+                      You save ₹{savings.toFixed(2)} on this order
+                    </p>
+                  )}
+                </div>
+  
+                <button
+                  onClick={() => router.push('/checkout')}
+                  className="w-full bg-green-600 text-white py-3 rounded-md mt-6 hover:bg-green-700 transition-colors"
+                >
+                  Proceed to Checkout
+                </button>
+              </div>
+            </div>
+          </div>
       </div>
     </div>
   );
