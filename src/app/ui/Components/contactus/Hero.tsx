@@ -72,13 +72,13 @@ const Hero = () => {
       </div>
 
       {/* Contact Form and Information Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full md:w-2/3 mx-auto justify-between items-center ">
         {/* Contact Form */}
 
-        <ContactForm sendMail = {sendMail} />
+        <ContactForm  sendMail = {sendMail} />
 
         {/* Contact Information */}
-        <div className="bg-white p-6 shadow-md rounded-lg">
+        <div className="bg-white p-6 shadow-md rounded-lg ">
           <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
           <p className="flex items-center gap-2 text-gray-700 mb-2">
             <FaPhone className="text-gray-600" /> +1 (555) 123-4567
