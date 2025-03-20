@@ -16,22 +16,22 @@ import {
   ShoppingBag,
   LogOut,
 } from "lucide-react";
-import { UserAuth } from "../../../lib/context/AuthContent";
-import { useAdminAuth } from "../../../lib/context/AdminAuth";
-import { useFavorites } from "../../../lib/context/FavoritesContext";
+import { UserAuth } from "@/lib/context/AuthContent";
+import { useAdminAuth } from "@/lib/context/AdminAuth";
+import { useFavorites } from "@/lib/context/FavoritesContext";
 
 // Define menu items
 const menuItems = [
   { name: "Home", path: "/" },
   { name: "Products", path: "/product" },
-  { name: "Services", path: "/services" },
-  { name: "Buy & Sell", path: "/buy" },
+  // { name: "Services", path: "/services" },
+  // { name: "Buy & Sell", path: "/buy" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contactus" },
 ];
-import { useCart } from "../../../lib/context/CartContext";
+import { useCart } from "@/lib/context/CartContext";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../../../firebase";
+import { db } from "@/../firebase";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface UserProfile {

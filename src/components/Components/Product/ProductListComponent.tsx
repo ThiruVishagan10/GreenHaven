@@ -7,9 +7,9 @@ import { motion } from "framer-motion";
 import { Search, Filter, X, Heart, Loader2  } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../../../../firebase";
-import { UserAuth } from "../../../../lib/context/AuthContent";
-import { useFavorites } from "../../../../lib/context/FavoritesContext";
+import { db } from "@/../firebase";
+import { UserAuth } from "@/lib/context/AuthContent";
+import { useFavorites } from "@/lib/context/FavoritesContext";
 import Image from "next/image";
 
 // Types

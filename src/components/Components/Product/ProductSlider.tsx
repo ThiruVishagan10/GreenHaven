@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import CustomSlider from "../CustomSlider";
 import { useRouter } from "next/navigation";
-import { db } from "../../../../../firebase";
+import { db } from "@/../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { CircularProgress } from "@nextui-org/react";
 

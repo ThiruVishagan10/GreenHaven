@@ -1,10 +1,6 @@
-import ContactUs from '../ui/Components/Product/ContactUs';
-import FloweringPlants from '../ui/Components/Product/FloweringPlants';
-import Product from '../ui/Components/aboutus/Product';
-import IndoorPlants from '../ui/Components/Product/IndoorPlants';
-import OutdoorPlants from '../ui/Components/Product/OutdoorPlants';
-import Hero from '../ui/Components/Product/Hero';
-import ProductSlider from '../ui/Components/Product/ProductSlider';
+import ContactUs from '@/components/Components/Product/ContactUs'
+import Hero from '@/components/Components/Product/Hero';
+import ProductSlider from '@/components/Components/Product/ProductSlider';
 
 export default function page() {
   return (
