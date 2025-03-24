@@ -6,8 +6,8 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Loader2, Package } from 'lucide-react';
-import { useFavorites } from '../../../../lib/context/FavoritesContext';
 import { UserAuth } from '@/lib/context/AuthContent';
+import { useFavorites } from '@/lib/context/FavoritesContext';
 
 
 export default function FavoritesSection() {
