@@ -17,10 +17,10 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
-import ProfileSection from '../ui/Components/userProfile/ProfileSection';
-import OrdersSection from '../ui/Components/userProfile/OrderSection';
-import FavoritesSection from '../ui/Components/userProfile/FavoritesSection';
-import AddressesSection from '../ui/Components/userProfile/AddressesSection';
+import ProfileSection from '@/components/Components/userProfile/ProfileSection';  
+import OrdersSection from '@/components/Components/userProfile/OrderSection';
+import FavoritesSection from '@/components/Components/userProfile/FavoritesSection';
+import AddressesSection from '@/components/Components/userProfile/AddressesSection';
 
 interface UserProfile {
   displayName: string;

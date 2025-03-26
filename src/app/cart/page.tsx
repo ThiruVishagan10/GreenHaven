@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import { Trash2, Minus, Plus, Loader2, Package } from "lucide-react";
-import { useCart } from "@/lib/context/CartContext";
-import { UserAuth } from "@/lib/context/AuthContent";
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, Minus, Plus, Loader2, Package } from 'lucide-react';
+import { useCart } from '@/lib/context/CartContext';
+import { UserAuth } from '@/lib/context/AuthContent';
 
 interface QuantityLoadingState {
   [key: string]: {
     isLoading: boolean;
-    type: "increase" | "decrease" | null;
+    type: 'increase' | 'decrease' | null;
   };
 }
 
@@ -31,22 +31,22 @@ export default function CartPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push("/login");
+      router.push('/login');
     }
   }, [user, router]);
 
-  const handleQuantityUpdate = async (itemId: string, newQuantity: number, type: "increase" | "decrease") => {
+  const handleQuantityUpdate = async (itemId: string, newQuantity: number, type: 'increase' | 'decrease') => {
     if (newQuantity < 1 || newQuantity > 10) return;
-
+    
     try {
       setQuantityLoading(prev => ({
         ...prev,
         [itemId]: { isLoading: true, type }
       }));
-
+      
       await updateQuantity(itemId, newQuantity);
     } catch (error) {
-      console.error("Error updating quantity:", error);
+      console.error('Error updating quantity:', error);
     } finally {
       setQuantityLoading(prev => ({
         ...prev,
@@ -60,7 +60,7 @@ export default function CartPage() {
       setRemovingItem(prev => ({ ...prev, [itemId]: true }));
       await removeFromCart(itemId);
     } catch (error) {
-      console.error("Error removing item:", error);
+      console.error('Error removing item:', error);
     } finally {
       setRemovingItem(prev => ({ ...prev, [itemId]: false }));
     }
@@ -68,7 +68,7 @@ export default function CartPage() {
 
   if (cartLoading) {
     return (
-      <div className="h-screen flex justify-center items-center">
+      <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-green-500" />
       </div>
     );
@@ -80,12 +80,12 @@ export default function CartPage() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="h-screen flex items-center justify-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
           <p className="text-gray-600 mb-8">Add some products to your cart to continue shopping.</p>
           <button
-            onClick={() => router.push("/product")}
+            onClick={() => router.push('/product')}
             className="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition-colors"
           >
             Browse Products
@@ -100,7 +100,8 @@ export default function CartPage() {
   const total = subtotal + shipping;
 
   return (
-    <div className="h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 overflow-y-auto">
+    <>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-2xl font-bold mb-8">Shopping Cart ({cartItems.length} items)</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -124,87 +125,98 @@ export default function CartPage() {
                       fill
                       className="object-cover rounded-md"
                       sizes="96px"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
-                      <Package className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-green-600 font-medium">
-                      ₹{item.offeredPrice}
-                    </span>
-                    {parseFloat(item.price) > parseFloat(item.offeredPrice) && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ₹{item.price}
-                      </span>
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 rounded-md flex items-center justify-center">
+                        <Package className="h-8 w-8 text-gray-400" />
+                      </div>
                     )}
                   </div>
-
-                  <div className="flex items-center gap-4 mt-2">
-                    <div className="flex items-center border rounded-md">
+  
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{item.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-green-600 font-medium">
+                        ₹{item.offeredPrice}
+                      </span>
+                      {parseFloat(item.price) > parseFloat(item.offeredPrice) && (
+                        <span className="text-sm text-gray-500 line-through">
+                          ₹{item.price}
+                        </span>
+                      )}
+                    </div>
+  
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center border rounded-md">
+                        <button
+                          onClick={() => handleQuantityUpdate(item.id, item.quantity - 1, 'decrease')}
+                          disabled={
+                            item.quantity <= 1 || 
+                            quantityLoading[item.id]?.isLoading
+                          }
+                          className={`p-2 transition-colors ${
+                            item.quantity <= 1 || quantityLoading[item.id]?.isLoading
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          {quantityLoading[item.id]?.isLoading && 
+                           quantityLoading[item.id]?.type === 'decrease' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Minus className="h-4 w-4" />
+                          )}
+                        </button>
+                        <span className="px-4 py-1 min-w-[40px] text-center">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() => handleQuantityUpdate(item.id, item.quantity + 1, 'increase')}
+                          disabled={
+                            item.quantity >= 10 || 
+                            quantityLoading[item.id]?.isLoading
+                          }
+                          className={`p-2 transition-colors ${
+                            item.quantity >= 10 || quantityLoading[item.id]?.isLoading
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          {quantityLoading[item.id]?.isLoading && 
+                           quantityLoading[item.id]?.type === 'increase' ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+  
                       <button
-                        onClick={() => handleQuantityUpdate(item.id, item.quantity - 1, "decrease")}
-                        disabled={item.quantity <= 1 || quantityLoading[item.id]?.isLoading}
-                        className={`p-2 transition-colors ${
-                          item.quantity <= 1 || quantityLoading[item.id]?.isLoading
-                            ? "text-gray-300 cursor-not-allowed"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
+                        onClick={() => handleRemoveItem(item.id)}
+                        disabled={removingItem[item.id]}
+                        className="text-red-500 hover:text-red-600 disabled:text-red-300"
                       >
-                        {quantityLoading[item.id]?.isLoading && quantityLoading[item.id]?.type === "decrease" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                        {removingItem[item.id] ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
-                          <Minus className="h-4 w-4" />
-                        )}
-                      </button>
-                      <span className="px-4 py-1 min-w-[40px] text-center">{item.quantity}</span>
-                      <button
-                        onClick={() => handleQuantityUpdate(item.id, item.quantity + 1, "increase")}
-                        disabled={item.quantity >= 10 || quantityLoading[item.id]?.isLoading}
-                        className={`p-2 transition-colors ${
-                          item.quantity >= 10 || quantityLoading[item.id]?.isLoading
-                            ? "text-gray-300 cursor-not-allowed"
-                            : "text-gray-600 hover:bg-gray-100"
-                        }`}
-                      >
-                        {quantityLoading[item.id]?.isLoading && quantityLoading[item.id]?.type === "increase" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Plus className="h-4 w-4" />
+                          <Trash2 className="h-5 w-5" />
                         )}
                       </button>
                     </div>
-
-                    <button
-                      onClick={() => handleRemoveItem(item.id)}
-                      disabled={removingItem[item.id]}
-                      className="text-red-500 hover:text-red-600 disabled:text-red-300"
-                    >
-                      {removingItem[item.id] ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-5 w-5" />
-                      )}
-                    </button>
                   </div>
-                </div>
-
-                <div className="text-right">
+  
+                  <div className="text-right">
                     <span className="font-semibold">
                       ₹{(parseFloat(item.offeredPrice) * item.quantity).toFixed(2)}
                     </span>
                   </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-         {/* Order Summary */}
-         <div className="lg:col-span-1">
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+  
+          {/* Order Summary */}
+          <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-lg shadow-sm sticky top-4">
               <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
               
@@ -267,7 +279,8 @@ export default function CartPage() {
               </div>
             </div>
           </div>
+        </div>
       </div>
-    </div>
-  );
-}
+      </>
+    );
+  }
