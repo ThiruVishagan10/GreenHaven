@@ -17,10 +17,18 @@ import {
   ChevronRight,
   Loader2
 } from 'lucide-react';
+<<<<<<< HEAD
 import ProfileSection from '@/components/Components/userProfile/ProfileSection';  
 import OrdersSection from '@/components/Components/userProfile/OrderSection';
 import FavoritesSection from '@/components/Components/userProfile/FavoritesSection';
 import AddressesSection from '@/components/Components/userProfile/AddressesSection';
+=======
+import ProfileSection from '@/components/Components/userProfile/ProfileSection';
+import OrdersSection from '@/components/Components/userProfile/OrderSection';
+import FavoritesSection from '@/components/Components/userProfile/FavoritesSection';
+import AddressesSection from '@/components/Components/userProfile/AddressesSection';
+
+>>>>>>> 1d19b187e8cfcd7391d42ffa8cbce74dcd3ba0d6
 
 interface UserProfile {
   displayName: string;
