@@ -6,11 +6,7 @@ import PaymentMethod from "@/components/Components/checkout/PaymentMethod";
 import OrderDetails from "@/components/Components/checkout/OrderDetails";
 
 export default function CheckoutPage() {
-  const [shippingData, setShippingData] = useState({
-    fullName: "",
-    phone: "",
-    address: "",
-  });
+ 
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -19,13 +15,13 @@ export default function CheckoutPage() {
         {/* Left Column: Shipping & Payment */}
         <div className="w-full md:w-1/2 flex flex-col bg-gray-100 p-6">
           <div className="flex-grow">
-            <ShippingInformation onSave={setShippingData} />
+            <ShippingInformation/>
           </div>
-          <div className="mt-10">
+          {/* <div className="mt-10">
             <PaymentMethod />
-          </div>
+          </div> */}
         </div>
-        <OrderDetails shippingData={shippingData} />
+        <OrderDetails />
       </div>
 
       {/* Footer Section */}

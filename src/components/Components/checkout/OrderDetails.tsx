@@ -1,24 +1,44 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Package, Loader2 } from "lucide-react";
 import { useCart } from "@/lib/context/CartContext";
 import { UserAuth } from "@/lib/context/AuthContent";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../../../firebase";
+
+
+interface PaymentData {
+  total: number;
+  userName: string;
+  phoneNumber: string;
+}
 
 export default function OrderDetails() {
   const router = useRouter();
   const { user } = UserAuth();
+  const [userData, setUserData] = useState<any>(null);
   const { cartItems, getCartTotal, isLoading } = useCart();
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
-  }, [user, router]);
+    const fetchUserData = async () => {
+      if (!user?.uid) return;
 
+      try {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
   if (isLoading) {
     return (
       <div className="h-screen flex justify-center items-center">
@@ -27,6 +47,22 @@ export default function OrderDetails() {
     );
   }
 
+  const handleProceedToPayment = () => {
+    if (!user) {
+      // Handle not logged in state
+      return;
+    }
+
+    const paymentData = {
+      total: total,
+      userName: userData?.displayName || user.displayName || "",
+      phoneNumber: userData?.phoneNumber || user.phoneNumber || "",
+    };
+
+    // Encode the data to safely pass it in the URL
+    const encodedData = encodeURIComponent(JSON.stringify(paymentData));
+    router.push(`/payment?data=${encodedData}`);
+  };
   if (!user || cartItems.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -134,15 +170,11 @@ export default function OrderDetails() {
           </div>
 
           <button
-            onClick={() => router.push("/payment")}
-            className="w-full bg-green-600 text-white py-3 rounded-md mt-6 hover:bg-green-700 transition-colors"
-          >
-            Proceed to Payment
-          </button>
-
-          <p className="text-center text-gray-500 mt-2">
-            Secure payment powered by Stripe
-          </p>
+      onClick={handleProceedToPayment}
+      className="w-full bg-green-600 text-white py-3 rounded-md mt-6 hover:bg-green-700 transition-colors"
+    >
+      Proceed to Payment
+    </button>
         </div>
       </div>
     </div>
