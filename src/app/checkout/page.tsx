@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ShippingInformation from "@/components/Components/checkout/ShippingInformation";
 import PaymentMethod from "@/components/Components/checkout/PaymentMethod";
-import OrderDetails from "@/components/Components/Payment/OrderDetails";
+import OrderDetails from "@/components/Components/checkout/OrderDetails";
 
 export default function CheckoutPage() {
   const [shippingData, setShippingData] = useState({
@@ -25,11 +25,7 @@ export default function CheckoutPage() {
             <PaymentMethod />
           </div>
         </div>
-
-        {/* Right Column: Order Details */}
-        <div className="w-full md:w-1/2 bg-gray-100 p-6">
-          <OrderDetails shippingData={shippingData} />
-        </div>
+        <OrderDetails shippingData={shippingData} />
       </div>
 
       {/* Footer Section */}
