@@ -6,10 +6,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Loader2, Package } from 'lucide-react';
-<<<<<<< HEAD
-import { useFavorites } from '@/lib/context/FavoritesContext';
-=======
->>>>>>> 1d19b187e8cfcd7391d42ffa8cbce74dcd3ba0d6
 import { UserAuth } from '@/lib/context/AuthContent';
 import { useFavorites } from '@/lib/context/FavoritesContext';
 

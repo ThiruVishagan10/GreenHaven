@@ -2,10 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-<<<<<<< HEAD
-import { db } from '@/../firebase';
-=======
->>>>>>> 1d19b187e8cfcd7391d42ffa8cbce74dcd3ba0d6
+
 import { UserAuth } from '@/lib/context/AuthContent';
 import { Loader2, Plus, MapPin, Edit2, Trash2 } from 'lucide-react';
 import { db } from '../../../../firebase';
