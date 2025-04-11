@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Filter, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../../../../../firebase";
+import { db } from "../../../../../firebase";
 
 interface Product {
   id: string;

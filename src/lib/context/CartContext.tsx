@@ -7,7 +7,7 @@ import { db } from '../../../firebase';
 import { UserAuth } from './AuthContent';
 
 interface CartItem {
-  description: ReactNode;
+  description: string;
   id: string;
   name: string;
   price: string;

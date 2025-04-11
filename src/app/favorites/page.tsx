@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useFavorites } from '@/lib/context/FavoritesContext';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../../../firebase';
-import { UserAuth } from '@/lib/context/AuthContent';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { Heart, Loader2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { useFavorites } from "@/lib/context/FavoritesContext";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../../firebase";
+import { UserAuth } from "@/lib/context/AuthContent";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Heart, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Product {
   id: string;
@@ -21,34 +21,36 @@ interface Product {
 }
 
 export default function FavoritesPage() {
-  const { 
-    addToFavorites, 
-    removeFromFavorites, 
-    isFavorite, 
-    loading: favoriteLoading 
+  const {
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite,
+    loading: favoriteLoading,
   } = useFavorites();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
+  const [actionLoading, setActionLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
   const { user } = UserAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
     const fetchFavoriteProducts = async () => {
       if (favoriteLoading) return;
-      
+
       try {
         setIsLoading(true);
-        const productsRef = collection(db, 'products');
+        const productsRef = collection(db, "products");
         const querySnapshot = await getDocs(productsRef);
-        
+
         const allProducts: Product[] = [];
         querySnapshot.forEach((doc) => {
           if (isFavorite(doc.id)) {
@@ -58,8 +60,8 @@ export default function FavoritesPage() {
 
         setProducts(allProducts);
       } catch (error) {
-        console.error('Error fetching favorite products:', error);
-        setError('Failed to fetch favorite products');
+        console.error("Error fetching favorite products:", error);
+        setError("Failed to fetch favorite products");
       } finally {
         setIsLoading(false);
       }
@@ -68,30 +70,31 @@ export default function FavoritesPage() {
     fetchFavoriteProducts();
   }, [user, router, favoriteLoading, isFavorite]);
 
-  const handleFavoriteClick = async (e: React.MouseEvent, productId: string) => {
+  const handleFavoriteClick = async (
+    e: React.MouseEvent,
+    productId: string
+  ) => {
     e.preventDefault();
     e.stopPropagation();
 
     if (!user) {
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
     try {
-      setActionLoading(prev => ({ ...prev, [productId]: true }));
+      setActionLoading((prev) => ({ ...prev, [productId]: true }));
 
       if (isFavorite(productId)) {
         await removeFromFavorites(productId);
         // Remove product from local state
-        setProducts(prev => prev.filter(p => p.id !== productId));
-      } else {
-        await addToFavorites(productId);
+        setProducts((prev) => prev.filter((p) => p.id !== productId));
       }
     } catch (error) {
-      console.error('Error updating favorite status:', error);
-      setError('Failed to update favorite status');
+      console.error("Error updating favorite status:", error);
+      setError("Failed to update favorite status");
     } finally {
-      setActionLoading(prev => ({ ...prev, [productId]: false }));
+      setActionLoading((prev) => ({ ...prev, [productId]: false }));
     }
   };
 
@@ -114,7 +117,7 @@ export default function FavoritesPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold mb-6">My Favorites</h1>
-      
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {error}
@@ -124,8 +127,8 @@ export default function FavoritesPage() {
       {products.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 mb-4">No favorite items yet</p>
-          <button 
-            onClick={() => router.push('/product')}
+          <button
+            onClick={() => router.push("/product")}
             className="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
           >
             Browse Products
@@ -162,11 +165,16 @@ export default function FavoritesPage() {
                     className={`absolute top-2 right-2 p-2 rounded-full 
                       bg-white/80 backdrop-blur-sm shadow-md 
                       hover:bg-white transition-all duration-200 z-10
-                      ${(actionLoading[product.id] || favoriteLoading) 
-                        ? 'opacity-50 cursor-not-allowed' 
-                        : ''
+                      ${
+                        actionLoading[product.id] || favoriteLoading
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
-                    aria-label={isFavorite(product.id) ? 'Remove from favorites' : 'Add to favorites'}
+                    aria-label={
+                      isFavorite(product.id)
+                        ? "Remove from favorites"
+                        : "Add to favorites"
+                    }
                   >
                     {actionLoading[product.id] ? (
                       <Loader2 className="h-4 w-4 animate-spin text-gray-600" />
@@ -174,8 +182,8 @@ export default function FavoritesPage() {
                       <Heart
                         className={`h-4 w-4 transition-colors ${
                           isFavorite(product.id)
-                            ? 'fill-red-500 text-red-500'
-                            : 'text-gray-600 hover:text-gray-900'
+                            ? "fill-red-500 text-red-500"
+                            : "text-gray-600 hover:text-gray-900"
                         }`}
                       />
                     )}
@@ -190,7 +198,7 @@ export default function FavoritesPage() {
                     </h3>
                     <p className="text-xs text-gray-500">{product.category}</p>
                   </div>
-                  
+
                   <p className="text-xs text-gray-600 line-clamp-2 min-h-[2rem] mb-2">
                     {product.description}
                   </p>
@@ -207,8 +215,10 @@ export default function FavoritesPage() {
                     <div className="text-[10px] px-1.5 py-0.5 bg-green-50 rounded text-green-600 font-medium">
                       {(() => {
                         const discount = Math.round(
-                          ((parseFloat(product.price) - parseFloat(product.offeredPrice)) / 
-                          parseFloat(product.price)) * 100
+                          ((parseFloat(product.price) -
+                            parseFloat(product.offeredPrice)) /
+                            parseFloat(product.price)) *
+                            100
                         );
                         return `${discount}% OFF`;
                       })()}
@@ -222,5 +232,4 @@ export default function FavoritesPage() {
       )}
     </div>
   );
-
 }

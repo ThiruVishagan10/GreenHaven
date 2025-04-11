@@ -456,7 +456,8 @@ export default function ProductPage({ params }: PageProps) {
         price: product.price,
         offeredPrice: product.offeredPrice,
         mainImage: product.mainImage,
-        quantity: quantity
+        quantity: quantity,
+        description: product.description
       });
     } catch (error) {
       console.error('Error adding to cart:', error);

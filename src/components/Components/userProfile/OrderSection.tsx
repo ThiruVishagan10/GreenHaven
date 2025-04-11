@@ -1,5 +1,4 @@
 import React from 'react';
-import { Order } from '../../../../types/product';
 
 const OrdersSection: React.FC = () => {
   return (

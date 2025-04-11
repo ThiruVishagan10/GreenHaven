@@ -11,7 +11,7 @@ import {
 import { db } from "../../../firebase";
 import { UserAuth } from "../context/AuthContent";
 
-interface FavoriteItem {
+export interface FavoriteItem {
   id: string;
   name: string;
   price: number;

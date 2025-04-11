@@ -60,9 +60,10 @@ export default function SignUp() {
     try {
       await googleSignIn();
       router.push("/"); 
-      console.error("Google signup error:", error);
+    } catch (error){
+      console.error(error);
     }
-  };
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-6 py-12">

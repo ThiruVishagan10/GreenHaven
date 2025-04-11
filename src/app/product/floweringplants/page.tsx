@@ -1,8 +1,6 @@
 "use client";
 
-
-import ProductList from '@/app/ui/Components/Product/FloweringPlants/ProductList';
-import ProductListComponent from '@/app/ui/Components/Product/ProductListComponent';
+import ProductListComponent from '@/components/Components/Product/ProductListComponent';
 import React from 'react'
 
 const FloweringPlants = () => {

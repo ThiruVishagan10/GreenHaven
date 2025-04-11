@@ -18,7 +18,7 @@ interface User {
   fullName: string;
   photoURL: string | null;
   phoneNumber: string | null;
-  address?: Address;
+  address?: Address | {};
 }
 
 interface UserContextType {
