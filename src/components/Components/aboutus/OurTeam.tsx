@@ -29,18 +29,18 @@ const teamMembers = [
 
 const OurTem = () => {
   return (
-    <div className="bg-[#f9fafb] text-black p-8">
-      <h2 className="text-2xl font-bold text-center mb-6">Our Team</h2>
-      <div className="flex justify-center space-x-6">
+    <div className="bg-[#f9fafb] text-black px-4 py-10 sm:px-6 lg:px-16">
+      <h2 className="text-2xl sm:text-3xl font-bold text-center mb-10">Our Team</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 justify-items-center">
         {teamMembers.map((member, index) => (
           <div
             key={index}
-            className="bg-white p-6 rounded-2xl shadow-lg text-center w-72 transition-transform transform hover:scale-105 hover:mt-2"
+            className="bg-white p-6 rounded-2xl shadow-lg text-center w-full max-w-xs transition-transform transform hover:scale-105 hover:shadow-xl"
           >
             <img
               src={member.image}
               alt={member.name}
-              className="w-24 h-24 mx-auto rounded-full mb-4"
+              className="w-24 h-24 mx-auto rounded-full mb-4 object-cover"
             />
             <h3 className="text-lg font-semibold">{member.name}</h3>
             <p className="text-gray-600">{member.role}</p>

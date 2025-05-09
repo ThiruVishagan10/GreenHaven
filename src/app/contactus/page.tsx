@@ -1,6 +1,6 @@
 import Hero from "@/components/Components/contactus/Hero"
 import Location from "@/components/Components/contactus/Location"
-import CustomerReview from "@/components/Components/contactus/CustomerReview"
+// import CustomerReview from "@/components/Components/contactus/CustomerReview"
 
 
 export default function ContactUs() {
@@ -9,7 +9,7 @@ export default function ContactUs() {
         <div>
             <Hero />
             <Location />
-            <CustomerReview />
+            {/* <CustomerReview /> */}
         </div>
     )
 }
