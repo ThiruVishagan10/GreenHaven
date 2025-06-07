@@ -5,22 +5,10 @@ import React from "react";
 const locations = [
   {
     id: 1,
-    name: "Chennai Main Center",
-    address: "123 Garden Street, Anna Nagar, Chennai - 600040",
+    name: "Vels Nursery Garden, Manapakkam",
+    address: "No. 4/101, Jeyaram Garden, Niligiris Super Market, Ambedkar Nagar Main Rd, near Manapakkam, Ramapuram, Parthasarathy Nagar, Manapakkam, Chennai, Tamil Nadu 600125",
     timing: "Mon-Sat: 8:00 AM - 7:00 PM",
-  },
-  {
-    id: 2,
-    name: "Coimbatore Branch",
-    address: "45 Green Avenue, R.S. Puram, Coimbatore - 641002",
-    timing: "Mon-Sat: 8:00 AM - 7:00 PM",
-  },
-  {
-    id: 3,
-    name: "Madurai Branch",
-    address: "78 Plant Road, K.K. Nagar, Madurai - 625020",
-    timing: "Mon-Sat: 8:00 AM - 7:00 PM",
-  },
+  }
 ];
 
 const Location = () => {

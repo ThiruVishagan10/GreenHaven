@@ -81,13 +81,19 @@ const Hero = () => {
         <div className="bg-white p-6 shadow-md rounded-lg">
           <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
           <p className="flex items-center gap-2 text-gray-700 mb-2">
-            <FaPhone className="text-gray-600" /> +1 (555) 123-4567
+            <FaPhone className="text-gray-600" /> 044-3581-2725
+          </p>
+          <p className="flex items-center gap-2 text-gray-700 mb-2">
+            <FaPhone className="text-gray-600" /> +91-75502 74125
+          </p>
+          <p className="flex items-center gap-2 text-gray-700 mb-2">
+            <FaPhone className="text-gray-600" /> +91-94425 32215
           </p>
           <p className="flex items-center gap-2 text-gray-700 mb-2">
             <FaEnvelope className="text-gray-600" /> contact@greenhaven.com
           </p>
           <p className="flex items-center gap-2 text-gray-700 mb-4">
-            <FaMapMarkerAlt className="text-gray-600" /> 123 Plant Street, Garden City, New York, NY 10001
+            <FaMapMarkerAlt className="text-gray-600" /> No.4/101, Ambedhkar Nagar,Main Road,<br></br>Manapakkam, Chennai - 600 125
           </p>
 
           <h3 className="text-lg font-semibold">Business Hours</h3>

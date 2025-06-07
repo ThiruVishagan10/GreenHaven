@@ -12,7 +12,7 @@ const Story = () => {
       className="relative z-10 flex justify-center -mt-20" // Increased z-index & moved it up
     >
       {/* Container with Background */}
-      <div className="bg-[#fdf8f3] shadow-lg rounded-xl p-10 w-full max-w-5xl">
+      <div className="bg-[#fdf8f3] shadow-lg rounded-xl p-10 w-full max-w-7xl">
         <div className="flex flex-col md:flex-row items-start gap-8">
           {/* Image on the Left */}
           <div className="w-full md:w-1/2">
@@ -28,12 +28,12 @@ const Story = () => {
           {/* Text on the Right */}
           <div className="w-full md:w-1/2">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Story</h2>
-            <p className="text-lg text-gray-700 leading-relaxed">
-              Founded in 1985, Green Haven Nursery has grown from a small family
-              business to Tamil Nadu’s premier destination for plants, gardening
-              supplies, and expert horticultural services. Our journey began
-              with a simple mission: to share our passion for plants while
-              promoting sustainable and beautiful gardens.
+            <p className="text-base text-gray-700 leading-relaxed">
+              Vels Nursery Garden
+              Bringing Nature Closer to You Since 2013
+              Vels Nursery Garden was started in 2013 by <b>Mr. T. Thangavelu</b> an agricultural expert with over 40 years of hands-on experience in farming, horticulture, and organic practices. A retired Additional Director of Agriculture, his passion for plants led him to start this journey in Manapakkam, Chennai, under the name Hortitech Nursery & Services.
+              <br></br><br></br>From the very beginning, we’ve been passionate about making gardening easy and accessible. In fact, we were among the first to introduce terrace gardening in Chennai, and we’ve helped set up over 800+ terrace gardens across the city. We’ve also partnered with the <b>MSME – Government of India</b> to conduct training programs on terrace gardening, nursery development, and mushroom cultivation.
+              Over the years, we’ve worked on some amazing landscape projects for places like <br></br><b>Chennai Airport, Ennore Port, and Indian Oil</b> – all backed by our deep understanding of soil, space, and sustainability.
             </p>
           </div>
         </div>

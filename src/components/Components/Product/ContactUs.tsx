@@ -24,6 +24,11 @@ const ContactUs = () => {
           placeholder="Your Email"
           className="w-full p-2 mb-4 text-black"
         />
+        <input
+          type="Content"
+          placeholder="Your Message"
+          className="w-full p-2 mb-4 h-7 text-black"
+        />
         <button className="bg-white text-black px-4 py-2 rounded-md">
           Send Message
         </button>
