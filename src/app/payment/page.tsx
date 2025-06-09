@@ -1,45 +1,12 @@
-// "use client";
-
-// import { useState, useEffect } from "react";
-// import OrderConfirmation from "@/components/Components/Payment/OrderConfirmation";
-// import OrderDetails from "@/components/Components/Payment/OrderDetails";
-
-// export default function OrderSummaryPage() {
-//   const [shippingData, setShippingData] = useState({
-//     fullName: "",
-//     phone: "",
-//     address: "",
-//   });
-
-//   useEffect(() => {
-//     // Fetch shipping details from sessionStorage to keep data during the checkout session
-//     const savedShippingData = sessionStorage.getItem("shippingData");
-//     if (savedShippingData) {
-//       setShippingData(JSON.parse(savedShippingData));
-//     }
-//   }, []);
-
-//   return (
-//     <div className="flex flex-col items-center min-h-screen bg-gray-100 p-6">
-//       <div className="w-full max-w-4xl">
-//         {/* Order Confirmation Message */}
-//         <OrderConfirmation status="success" orderId="ORD-2024-1234" orderDate="2024-03-20" />
-
-//         {/* Order Details */}
-//         <div className="mt-6">
-//           <OrderDetails shippingData={shippingData} />
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
+ 
 "use client";
 
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useSearchParams } from 'next/navigation';
 import { Loader2 } from "lucide-react";
+import { UserAuth } from "@/lib/context/AuthContent";
+
 
 interface PaymentData {
   total: number;
@@ -54,6 +21,7 @@ export default function Payment() {
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = UserAuth();
 
   useEffect(() => {
     // Get and parse the payment data from URL
@@ -80,15 +48,16 @@ export default function Payment() {
   const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
+  
     const data = {
       name: name,
       amount: amount,
       mobile,
+      userId: user?.uid, // Add user ID
       MUID: "MUID" + Date.now(),
       transactionId: "T" + Date.now(),
     };
-
+  
     try {
       const response = await axios.post("http://localhost:3000/api/order", data);
       if (response.data?.data?.instrumentResponse?.redirectInfo?.url) {
@@ -101,7 +70,6 @@ export default function Payment() {
       setLoading(false);
     }
   };
-
 
 
   if (error) {

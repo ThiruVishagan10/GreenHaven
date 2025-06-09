@@ -10,16 +10,16 @@ export async function POST(req: Request) {
     let reqData = await req.json();
 
     let merchantTransactionId = reqData.transactionId;
-
+    
     const data = {
       merchantId: merchant_id,
       merchantTransactionId: merchantTransactionId,
       name: reqData.name,
       amount: reqData.amount * 100,
-      redirectUrl: `http://localhost:3000/api/status?id=${merchantTransactionId}`,
+      redirectUrl: `http://localhost:3000/api/status?id=${merchantTransactionId}&userId=${reqData.userId || ''}`,
       redirectMode: "POST",
-      callbackUrl: `http://localhost:3000/api/status?id=${merchantTransactionId}`,
-      mobileNumber: reqData.phone,
+      callbackUrl: `http://localhost:3000/api/status?id=${merchantTransactionId}&userId=${reqData.userId || ''}`,
+      mobileNumber: reqData.mobile || reqData.phone,
       paymentInstrument: {
         type: "PAY_PAGE",
       },
@@ -48,16 +48,10 @@ export async function POST(req: Request) {
       },
     };
 
-    // Await axios response
     const response = await axios(options);
-    console.log(response.data);
-
-    // Return the response using NextResponse
     return NextResponse.json(response.data);
   } catch (error) {
     console.log(error);
-
-    // Return error response
     return NextResponse.json(
       { error: "Payment initiation failed", details: (error as any).message },
       { status: 500 }

@@ -52,17 +52,19 @@ export default function OrderDetails() {
       // Handle not logged in state
       return;
     }
-
+  
     const paymentData = {
       total: total,
       userName: userData?.displayName || user.displayName || "",
       phoneNumber: userData?.phoneNumber || user.phoneNumber || "",
+      cartItems: cartItems // Include cart items in payment data
     };
-
+  
     // Encode the data to safely pass it in the URL
     const encodedData = encodeURIComponent(JSON.stringify(paymentData));
     router.push(`/payment?data=${encodedData}`);
   };
+  
   if (!user || cartItems.length === 0) {
     return (
       <div className="h-screen flex items-center justify-center">

@@ -25,6 +25,7 @@ interface CartContextType {
   getCartTotal: () => { subtotal: number; savings: number };
   getCartCount: () => number;
   isLoading: boolean;
+  clearCart: () => Promise<void>; 
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -147,6 +148,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return { subtotal, savings };
   };
 
+  const clearCart = async () => {
+    if (!user) return;
+    
+    try {
+      setIsLoading(true);
+      const cartRef = doc(db, 'carts', user.uid);
+      await updateDoc(cartRef, { items: [] });
+      setCartItems([]);
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
   return (
     <CartContext.Provider value={{
       cartItems,
@@ -157,6 +173,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       getCartTotal,
       getCartCount,
       isLoading,
+      clearCart, // Add this line
     }}>
       {children}
     </CartContext.Provider>
