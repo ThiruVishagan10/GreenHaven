@@ -123,7 +123,7 @@ export default function OrdersPage() {
               </h2>
               
               <div className="space-y-4">
-                {groupedOrders[year][month].map((order) => (
+                {groupedOrders[year][month].map((order:any) => (
                   <div key={order.id} className="bg-white rounded shadow-sm overflow-hidden">
                     {/* Order Header */}
                     <div className="bg-gray-100 p-4 grid grid-cols-4 gap-2 text-sm">
@@ -162,7 +162,7 @@ export default function OrdersPage() {
                     
                     {/* Order Items */}
                     <div className="p-4">
-                      {order.items?.slice(0, 2).map((item, index) => (
+                      {order.items?.slice(0, 2).map((item:any, index:number) => (
                         <div key={index} className="flex py-3 border-b last:border-0">
                           <div 
                             className="w-20 h-20 bg-gray-100 flex-shrink-0 mr-4 flex items-center justify-center cursor-pointer"

@@ -15,6 +15,17 @@ import {
   MapPin,
 } from "lucide-react";
 
+// interface OrderItem {
+//   id: string;
+//   name: string;
+//   description?: string;
+//   quantity: number;
+//   price: string | number;
+//   offeredPrice: string | number;
+//   mainImage?: string;
+// }
+
+
 export default function OrderDetailPage() {
   const { orderId } = useParams();
   const router = useRouter();
@@ -37,7 +48,7 @@ export default function OrderDetailPage() {
       try {
         const orderDoc = await getDoc(doc(db, "orders", orderId as string));
         if (orderDoc.exists()) {
-          const orderData = {
+          const orderData: { id: string; createdAt: Date; userId?: string } = {
             id: orderDoc.id,
             ...orderDoc.data(),
             createdAt: orderDoc.data().createdAt?.toDate?.() || new Date(),
@@ -152,7 +163,7 @@ export default function OrderDetailPage() {
           <h2 className="text-xl font-bold mb-4">Order Summary</h2>
 
           <div className="space-y-6">
-            {order.items?.map((item, index) => (
+            {order.items?.map((item:any, index:number) => (
               <div key={index} className="flex border-b pb-6 last:border-0">
                 <div
                   className="w-24 h-24 bg-gray-100 flex-shrink-0 mr-6 flex items-center justify-center cursor-pointer"
