@@ -8,38 +8,62 @@ export default function Home() {
   const [mobile, setMobile] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
 
-    // Prepare the data
-    const data = {
-      name: name,
-      amount: amount,
-      mobile,
-      transactionId: "T" + Date.now(),
-    };
+const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setLoading(true);
 
+  // Parse the payment data from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const encodedData = searchParams.get('data');
+  interface PaymentData {
+    address?: string;
+    cartItems?: any[];
+    userId?: string;
+  }
+
+  let paymentData: PaymentData = {};
+  let address = null;
+  let cartItems = [];
+  let userId = "";
+  
+  if (encodedData) {
     try {
-      // Initiate payment
-      const response = await axios.post("http://localhost:3000/api/order", data);
-
-      // Redirect user to PhonePe payment page
-      if (
-        response.data &&
-        response.data.data.instrumentResponse.redirectInfo.url
-      ) {
-        window.location.href =
-          response.data.data.instrumentResponse.redirectInfo.url;
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error initiating payment. Please try again.");
-    } finally {
-      setLoading(false);
+      paymentData = JSON.parse(decodeURIComponent(encodedData));
+      address = paymentData.address || null;
+      cartItems = paymentData.cartItems || [];
+      userId = paymentData.userId || "";
+    } catch (error) {
+      console.error("Error parsing payment data:", error);
     }
+  }
+
+  const data = {
+    name: name,
+    amount: amount,
+    mobile: mobile,
+    userId: userId,
+    address: address,
+    cartItems: cartItems,
+    MUID: "MUID" + Date.now(),
+    transactionId: "T" + Date.now(),
   };
+
+  try {
+    const response = await axios.post("http://localhost:3000/api/order", data);
+    if (response.data?.data?.instrumentResponse?.redirectInfo?.url) {
+      window.location.href = response.data.data.instrumentResponse.redirectInfo.url;
+    }
+  } catch (err) {
+    console.error("Payment error:", err);
+    setError("Payment processing failed. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-r from-indigo-50 to-green-500">

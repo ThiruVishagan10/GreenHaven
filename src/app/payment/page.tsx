@@ -45,31 +45,49 @@ export default function Payment() {
     }
   }, [searchParams]);
 
-  const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
+  // In payment/page.tsx
+const handlePayment = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setLoading(true);
+
+  // Get the encoded data from URL
+  const encodedData = searchParams.get('data');
+  let parsedData: Partial<PaymentData & { userId?: string; address?: string; cartItems?: any[] }> = {};
   
-    const data = {
-      name: name,
-      amount: amount,
-      mobile,
-      userId: user?.uid, // Add user ID
-      MUID: "MUID" + Date.now(),
-      transactionId: "T" + Date.now(),
-    };
-  
+  if (encodedData) {
     try {
-      const response = await axios.post("http://localhost:3000/api/order", data);
-      if (response.data?.data?.instrumentResponse?.redirectInfo?.url) {
-        window.location.href = response.data.data.instrumentResponse.redirectInfo.url;
-      }
-    } catch (err) {
-      console.error("Payment error:", err);
-      setError("Payment processing failed. Please try again.");
-    } finally {
-      setLoading(false);
+      parsedData = JSON.parse(decodeURIComponent(encodedData));
+      console.log("Payment data:", parsedData); // Debug log
+    } catch (error) {
+      console.error("Error parsing data:", error);
     }
+  }
+
+  const data = {
+    name: name,
+    amount: amount,
+    mobile: mobile,
+    userId: parsedData.userId || "",
+    address: parsedData.address || null, // Make sure address is included
+    cartItems: parsedData.cartItems || [],
+    MUID: "MUID" + Date.now(),
+    transactionId: "T" + Date.now(),
   };
+
+  console.log("Sending to order API:", data); // Debug log
+
+  try {
+    const response = await axios.post("http://localhost:3000/api/order", data);
+    if (response.data?.data?.instrumentResponse?.redirectInfo?.url) {
+      window.location.href = response.data.data.instrumentResponse.redirectInfo.url;
+    }
+  } catch (err) {
+    console.error("Payment error:", err);
+    setError("Payment processing failed. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   if (error) {
